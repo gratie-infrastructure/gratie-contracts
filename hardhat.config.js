@@ -25,7 +25,15 @@ module.exports = {
     polygon: {
       url: process.env.POLYGON_RPC_URL,
       accounts: [process.env.PRIVATE_KEY]
-    }
+    },
+    fvm_calibration: {
+      url: process.env.FVM_CALIBRATION_RPC_URL,
+      accounts: [process.env.PRIVATE_KEY]
+    },
+    fvm_mainnet: {
+      url: process.env.FVM_MAINNET_RPC_URL,
+      accounts: [process.env.PRIVATE_KEY]
+    },
   },
   etherscan: {
     apiKey: {
