@@ -19,6 +19,7 @@ contract ServiceProviderNFT is ERC1155SupplyUpgradeable, ERC1155URIStorageUpgrad
         _;
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }

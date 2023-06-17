@@ -18,6 +18,7 @@ contract RewardToken is ERC20Upgradeable {
         _;
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }

@@ -17,6 +17,7 @@ contract BusinessNFT is ERC721URIStorageUpgradeable {
         _;
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }

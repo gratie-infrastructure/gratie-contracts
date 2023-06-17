@@ -84,7 +84,7 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         "RewardTokenMint(uint256 businessId,uint256 amount,uint256 lockInPercentage,uint256 mintNonce)"
     );
 
-    bytes32 public constant _PAYMENT_TYPEHASH = keccak256("Payment(address method,uint256 amount)");
+    bytes32 public constant _PAYMENT_TYPEHASH = keccak256("Payment(address method,uint256 amount,uint256 tierID,address buyer)");
     
     struct Payment {
         address method;
@@ -272,6 +272,7 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
     );
 
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
@@ -328,7 +329,7 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         );
 
         require(
-            hasRole(DEFAULT_ADMIN_ROLE, _getPaymentSigner(_payment, _signature)),
+            hasRole(DEFAULT_ADMIN_ROLE, _getPaymentSigner(_payment, _signature, _businessData.businessNftTier)),
             "Invalid payment signer!"
         );
 
@@ -765,14 +766,17 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
 
     function _getPaymentSigner(
         Payment memory _payment,
-        bytes memory _signature
+        bytes memory _signature,
+        uint256 _tierID
     ) private view returns (address) {
         bytes32 digest = _hashTypedDataV4(
             keccak256(
                 abi.encode(
                     _PAYMENT_TYPEHASH,
                     _payment.method,
-                    _payment.amount
+                    _payment.amount,
+                    _tierID,
+                    msg.sender
                 )
             )
         );

@@ -9,6 +9,7 @@ contract GratieToken is ERC20Upgradeable, OwnableUpgradeable {
 
     string public iconURI;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
