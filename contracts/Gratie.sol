@@ -329,6 +329,10 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         );
 
         require(
+            businessNFTs.balanceOf(msg.sender) == 0,
+            "Already a business!"
+        );
+        require(
             hasRole(DEFAULT_ADMIN_ROLE, _getPaymentSigner(_payment, _signature, _businessData.businessNftTier)),
             "Invalid payment signer!"
         );
@@ -392,6 +396,10 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         string[] memory _divisionNames,
         string[] memory _divisionMetadataURIs
     ) external onlyOwner {
+        require(
+            businessNFTs.balanceOf(_to) == 0,
+            "Already a business!"
+        );
         require(
             _businessNftTier > 0 &&
             _businessNftTier <= totalBusinessNftTiers,
@@ -480,6 +488,10 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         uint256 _tokenID = business.serviceProviderDivisions[_divisionID].serviceProviderNftID;
 
         for(uint256 i; i<_serviceProviders.length;) {
+            require(
+                serviceProviderNFTs.balanceOf(_serviceProviders[i], _tokenID) == 0,
+                "Already a service provider!"
+            );
             serviceProviderNFTs.mint(
                 _serviceProviders[i],
                 _tokenID,
