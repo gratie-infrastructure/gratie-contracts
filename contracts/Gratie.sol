@@ -248,6 +248,9 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         uint256 amount,
         uint256 lockInPercentage,
         uint256 totalSupply,
+        string tokenName,
+        string tokenSymbol,
+        string tokenIconURL,
         uint256 timestamp
     );
 
@@ -604,6 +607,9 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
             _data.amount,
             _data.lockInPercentage,
             IERC20Mintable(rewardToken).totalSupply(),
+            _tokenName,
+            _tokenSymbol,
+            _tokenIconURL,
             block.timestamp
         );
     }
