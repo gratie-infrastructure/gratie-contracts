@@ -595,7 +595,7 @@ contract Gratie is
         string memory _tokenName,
         string memory _tokenSymbol,
         string memory _tokenIconURL
-    ) external isBusiness {
+    ) external {
         require(
             msg.sender == businessNFTs.ownerOf(_data.businessId),
             "Not the business owner!"
@@ -649,7 +649,7 @@ contract Gratie is
     function startRewardDistribution(
         uint256 _businessID,
         uint256 _percentageToDistribute
-    ) external isBusiness {
+    ) external {
         require(
             msg.sender == businessNFTs.ownerOf(_businessID),
             "Not the business owner!"
@@ -839,14 +839,5 @@ contract Gratie is
             )
         );
         return ECDSAUpgradeable.recover(digest, _signature);
-    }
-
-    function changeAdminStatus(address _address, bool _status) public isAdmin {
-        adminAddresses[_address] = _status;
-    }
-
-    function changeBusinessStatus(address _address) public isAdmin {
-        require(!approvedBusinesses[_address], "Business already registered!");
-        approvedBusinesses[_address] = true;
     }
 }
