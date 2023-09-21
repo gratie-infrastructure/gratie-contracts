@@ -10,10 +10,7 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable
 import "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
 
 interface IERC20Mintable is IERC20Upgradeable {
-    function mint(
-        address _receiver,
-        uint256 _amount
-    ) external;
+    function mint(address _receiver, uint256 _amount) external;
 
     function initialize(
         string memory _name,
@@ -50,21 +47,16 @@ interface IERC1155 is IERC1155Upgradeable {
         uint256[] calldata _amounts
     ) external;
 
-    function setTokenURI(
-        uint256 _tokenId,
-        string memory _tokenURI
-    ) external;
+    function setTokenURI(uint256 _tokenId, string memory _tokenURI) external;
 
-    function burn(
-        address _from,
-        uint256 _id,
-        uint256 _amount
-    ) external;
+    function burn(address _from, uint256 _id, uint256 _amount) external;
 }
 
-
-contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeable {
-
+contract Gratie is
+    AccessControlUpgradeable,
+    OwnableUpgradeable,
+    EIP712Upgradeable
+{
     string public domainName;
     string public domainVersion;
 
@@ -78,14 +70,19 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
     uint256 public totalBusinesses;
     uint256 public totalDivisions;
 
-    bytes32 public constant GRATIE_PLATFORM_ADMIN = keccak256("GRATIE_PLATFORM_ADMIN");
+    bytes32 public constant GRATIE_PLATFORM_ADMIN =
+        keccak256("GRATIE_PLATFORM_ADMIN");
 
-    bytes32 private constant _REWARD_MINT_TYPEHASH = keccak256(
-        "RewardTokenMint(uint256 businessId,uint256 amount,uint256 lockInPercentage,uint256 mintNonce)"
-    );
+    bytes32 private constant _REWARD_MINT_TYPEHASH =
+        keccak256(
+            "RewardTokenMint(uint256 businessId,uint256 amount,uint256 lockInPercentage,uint256 mintNonce)"
+        );
 
-    bytes32 public constant _PAYMENT_TYPEHASH = keccak256("Payment(address method,uint256 amount,uint256 tierID,address buyer)");
-    
+    bytes32 public constant _PAYMENT_TYPEHASH =
+        keccak256(
+            "Payment(address method,uint256 amount,uint256 tierID,address buyer)"
+        );
+
     struct Payment {
         address method;
         uint256 amount;
@@ -162,11 +159,29 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
 
     mapping(uint256 => uint256) public rewardTokensAvailable;
     mapping(uint256 => uint256) public rewardTokensDistributed;
-    mapping(uint256 => mapping(address => uint256)) public serviceProviderRegisteredAt;
+    mapping(uint256 => mapping(address => uint256))
+        public serviceProviderRegisteredAt;
     mapping(uint256 => uint256) public rewardDistributionsCreated;
-    mapping(uint256 => mapping(uint256 => RewardTokenDistribution)) public rewardDistributions;
-    mapping(address => mapping(uint256 => mapping(uint256 => bool))) public hasClaimedRewards;
+    mapping(uint256 => mapping(uint256 => RewardTokenDistribution))
+        public rewardDistributions;
+    mapping(address => mapping(uint256 => mapping(uint256 => bool)))
+        public hasClaimedRewards;
     mapping(address => bool) public isValidPaymentMethod;
+    mapping(address => bool) public adminAddresses;
+    mapping(address => bool) public approvedBusinesses;
+
+    // modifiers
+    modifier isAdmin() {
+        bool allowed = adminAddresses[msg.sender];
+        require(allowed, "Only Admin is Allowed!");
+        _;
+    }
+
+    modifier isBusiness() {
+        bool allowed = approvedBusinesses[msg.sender];
+        require(allowed, "Only Business is Allowed!");
+        _;
+    }
 
     // Events
     event BusinessNftTierAdded(
@@ -274,15 +289,12 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         uint256 timestamp
     );
 
-
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(
-        InitData memory _initData
-    ) external initializer {
+    function initialize(InitData memory _initData) external initializer {
         __Ownable_init();
         __EIP712_init(_initData.domainName, _initData.domainVersion);
         _grantRole(DEFAULT_ADMIN_ROLE, _initData.defaultAdminAddress);
@@ -295,35 +307,41 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         usdc = IERC20Upgradeable(_initData.usdcContractAddress);
         rewardTokenImplementation = _initData.rewardTokenImplementation;
 
-        for(uint256 i; i<_initData.gratiePlatformAdmins.length;) {
-            _grantRole(GRATIE_PLATFORM_ADMIN, _initData.gratiePlatformAdmins[i]);
-            unchecked { ++i; }
+        for (uint256 i; i < _initData.gratiePlatformAdmins.length; ) {
+            _grantRole(
+                GRATIE_PLATFORM_ADMIN,
+                _initData.gratiePlatformAdmins[i]
+            );
+            unchecked {
+                ++i;
+            }
         }
 
-        for(uint256 i; i<_initData.paymentMethods.length;) {
+        for (uint256 i; i < _initData.paymentMethods.length; ) {
             isValidPaymentMethod[_initData.paymentMethods[i]] = true;
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
         _addBusinessNftTiers(_initData.businessNftTiers);
     }
 
-
-    function addBusinessNftTiers(BusinessNftTier[] memory _tiers) external onlyOwner {
+    function addBusinessNftTiers(
+        BusinessNftTier[] memory _tiers
+    ) external onlyOwner {
         _addBusinessNftTiers(_tiers);
     }
-
 
     function registerBusiness(
         BusinessData memory _businessData,
         string[] memory _divisionNames,
         string[] memory _divisionMetadataURIs,
-        Payment memory _payment,
-        bytes memory _signature
+        Payment memory _payment
     ) external payable {
         require(
             _businessData.businessNftTier > 0 &&
-            _businessData.businessNftTier <= totalBusinessNftTiers,
+                _businessData.businessNftTier <= totalBusinessNftTiers,
             "Invalid Business NFT Tier!"
         );
         require(
@@ -331,49 +349,47 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
             "Invalid Payment Method!"
         );
 
-        require(
-            businessNFTs.balanceOf(msg.sender) == 0,
-            "Already a business!"
-        );
-        require(
-            hasRole(DEFAULT_ADMIN_ROLE, _getPaymentSigner(_payment, _signature, _businessData.businessNftTier)),
-            "Invalid payment signer!"
-        );
+        require(businessNFTs.balanceOf(msg.sender) == 0, "Already a business!");
 
         if (_payment.method == address(0)) {
-            require(
-                msg.value == _payment.amount,
-                "Invalid ether sent!"
-            );
+            require(msg.value == _payment.amount, "Invalid ether sent!");
         } else {
-            require(
-                msg.value == 0,
-                "Ether sent with ERC-20 purchase!"
-            );
+            require(msg.value == 0, "Ether sent with ERC-20 purchase!");
         }
 
-        BusinessNftTier memory tierData = businessNftTiers[_businessData.businessNftTier];
-        
-        require(
-            tierData.isActive,
-            "Inactive business nft tier!"
-        );
+        BusinessNftTier memory tierData = businessNftTiers[
+            _businessData.businessNftTier
+        ];
+
+        require(tierData.isActive, "Inactive business nft tier!");
 
         Business storage business = businesses[++totalBusinesses];
         business.name = _businessData.name;
         business.email = _businessData.email;
         business.businessNftTier = _businessData.businessNftTier;
-        ServiceProviderDivision[] memory _divisions = _addDivisionsInBusiness(totalBusinesses, _divisionNames, _divisionMetadataURIs);
-        
+        ServiceProviderDivision[] memory _divisions = _addDivisionsInBusiness(
+            totalBusinesses,
+            _divisionNames,
+            _divisionMetadataURIs
+        );
+
         // Transfer payment value from msg.sender to platform fee receiver.
         if (_payment.method == address(0)) {
             sendValue(platformFeeReceiver, _payment.amount);
         } else {
-            IERC20Upgradeable(_payment.method).transferFrom(msg.sender, platformFeeReceiver, _payment.amount);
+            IERC20Upgradeable(_payment.method).transferFrom(
+                msg.sender,
+                platformFeeReceiver,
+                _payment.amount
+            );
         }
-        
+
         // Mint ERC-721 NFT
-        businessNFTs.mint(msg.sender, totalBusinesses, _businessData.nftMetadataURI);
+        businessNFTs.mint(
+            msg.sender,
+            totalBusinesses,
+            _businessData.nftMetadataURI
+        );
 
         emit BusinessRegistered(
             msg.sender,
@@ -389,7 +405,6 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         );
     }
 
-
     function registerBusinessByOwner(
         address _to,
         string memory _name,
@@ -399,28 +414,25 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         string[] memory _divisionNames,
         string[] memory _divisionMetadataURIs
     ) external onlyOwner {
+        require(businessNFTs.balanceOf(_to) == 0, "Already a business!");
         require(
-            businessNFTs.balanceOf(_to) == 0,
-            "Already a business!"
-        );
-        require(
-            _businessNftTier > 0 &&
-            _businessNftTier <= totalBusinessNftTiers,
+            _businessNftTier > 0 && _businessNftTier <= totalBusinessNftTiers,
             "Invalid Business NFT Tier!"
         );
         BusinessNftTier memory tierData = businessNftTiers[_businessNftTier];
-        
-        require(
-            tierData.isActive,
-            "Inactive business nft tier!"
-        );
+
+        require(tierData.isActive, "Inactive business nft tier!");
 
         Business storage business = businesses[++totalBusinesses];
         business.name = _name;
         business.email = _email;
         business.businessNftTier = _businessNftTier;
-        ServiceProviderDivision[] memory _divisions = _addDivisionsInBusiness(totalBusinesses, _divisionNames, _divisionMetadataURIs);
-        
+        ServiceProviderDivision[] memory _divisions = _addDivisionsInBusiness(
+            totalBusinesses,
+            _divisionNames,
+            _divisionMetadataURIs
+        );
+
         // Mint ERC-721 NFT
         businessNFTs.mint(_to, totalBusinesses, _nftMetadataURI);
 
@@ -446,9 +458,12 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
             businessNFTs.ownerOf(_businessID) == msg.sender,
             "Not the Business NFT Owner!"
         );
-        _addDivisionsInBusiness(_businessID, _divisionNames, _divisionMetadataURIs);
+        _addDivisionsInBusiness(
+            _businessID,
+            _divisionNames,
+            _divisionMetadataURIs
+        );
     }
-
 
     function registerServiceProviders(
         uint256 _businessID,
@@ -456,14 +471,12 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         address[] memory _serviceProviders
     ) external {
         require(
-            _businessID > 0 &&
-            _businessID <= totalBusinesses,
+            _businessID > 0 && _businessID <= totalBusinesses,
             "Invalid business id!"
         );
         Business storage business = businesses[_businessID];
         require(
-            _divisionID > 0 &&
-            _divisionID <= business.divisionsInBusiness,
+            _divisionID > 0 && _divisionID <= business.divisionsInBusiness,
             "Invalid division id!"
         );
         require(
@@ -471,16 +484,27 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
             "Not the business nft owner!"
         );
         business.totalServiceProviders += _serviceProviders.length;
-        business.serviceProviderDivisions[_divisionID].serviceProvidersInDivision += _serviceProviders.length;
-        
+        business
+            .serviceProviderDivisions[_divisionID]
+            .serviceProvidersInDivision += _serviceProviders.length;
+
         uint256 usdcAmount;
-        BusinessNftTier memory tier = businessNftTiers[business.businessNftTier];
+        BusinessNftTier memory tier = businessNftTiers[
+            business.businessNftTier
+        ];
         // Charge business if total service providers cross free users as specified in the nft tier.
         if (business.totalServiceProviders > tier.freeUsersCount) {
-            if (business.totalServiceProviders - _serviceProviders.length >= tier.freeUsersCount) {
-                usdcAmount = tier.usdcPerAdditionalUser * _serviceProviders.length;
+            if (
+                business.totalServiceProviders - _serviceProviders.length >=
+                tier.freeUsersCount
+            ) {
+                usdcAmount =
+                    tier.usdcPerAdditionalUser *
+                    _serviceProviders.length;
             } else {
-                usdcAmount = tier.usdcPerAdditionalUser * (business.totalServiceProviders - tier.freeUsersCount);
+                usdcAmount =
+                    tier.usdcPerAdditionalUser *
+                    (business.totalServiceProviders - tier.freeUsersCount);
             }
             IERC20Upgradeable(usdc).transferFrom(
                 msg.sender,
@@ -488,20 +512,23 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
                 usdcAmount
             );
         }
-        uint256 _tokenID = business.serviceProviderDivisions[_divisionID].serviceProviderNftID;
+        uint256 _tokenID = business
+            .serviceProviderDivisions[_divisionID]
+            .serviceProviderNftID;
 
-        for(uint256 i; i<_serviceProviders.length;) {
+        for (uint256 i; i < _serviceProviders.length; ) {
             require(
-                serviceProviderNFTs.balanceOf(_serviceProviders[i], _tokenID) == 0,
+                serviceProviderNFTs.balanceOf(_serviceProviders[i], _tokenID) ==
+                    0,
                 "Already a service provider!"
             );
-            serviceProviderNFTs.mint(
-                _serviceProviders[i],
-                _tokenID,
-                1
-            );
-            serviceProviderRegisteredAt[_businessID][_serviceProviders[i]] = block.timestamp;
-            unchecked { ++i; }
+            serviceProviderNFTs.mint(_serviceProviders[i], _tokenID, 1);
+            serviceProviderRegisteredAt[_businessID][
+                _serviceProviders[i]
+            ] = block.timestamp;
+            unchecked {
+                ++i;
+            }
         }
 
         emit ServiceProvidersRegistered(
@@ -514,21 +541,18 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         );
     }
 
-
     function removeServiceProviders(
         uint256 _businessID,
         uint256 _divisionID,
         address[] memory _serviceProviders
     ) external {
         require(
-            _businessID > 0 &&
-            _businessID <= totalBusinesses,
+            _businessID > 0 && _businessID <= totalBusinesses,
             "Invalid business id!"
         );
         Business storage business = businesses[_businessID];
         require(
-            _divisionID > 0 &&
-            _divisionID <= business.divisionsInBusiness,
+            _divisionID > 0 && _divisionID <= business.divisionsInBusiness,
             "Invalid division id!"
         );
         require(
@@ -536,18 +560,25 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
             "Not the business nft owner!"
         );
 
-        businesses[_businessID].totalServiceProviders -= _serviceProviders.length;
-        businesses[_businessID].serviceProviderDivisions[_divisionID].serviceProvidersInDivision -= _serviceProviders.length;
+        businesses[_businessID].totalServiceProviders -= _serviceProviders
+            .length;
+        businesses[_businessID]
+            .serviceProviderDivisions[_divisionID]
+            .serviceProvidersInDivision -= _serviceProviders.length;
 
-        uint256 _nftId = businesses[_businessID].serviceProviderDivisions[_divisionID].serviceProviderNftID;
-        for (uint256 i; i<_serviceProviders.length;) {
+        uint256 _nftId = businesses[_businessID]
+            .serviceProviderDivisions[_divisionID]
+            .serviceProviderNftID;
+        for (uint256 i; i < _serviceProviders.length; ) {
             require(
                 serviceProviderNFTs.balanceOf(_serviceProviders[i], _nftId) > 0,
                 "Not a service provider!"
             );
             serviceProviderRegisteredAt[_businessID][_serviceProviders[i]] = 0;
             serviceProviderNFTs.burn(_serviceProviders[i], _nftId, 1);
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
         emit ServiceProvidersRemoved(
@@ -559,18 +590,12 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         );
     }
 
-
     function generateRewardTokens(
         RewardTokenMint memory _data,
-        bytes memory _signature,
         string memory _tokenName,
         string memory _tokenSymbol,
         string memory _tokenIconURL
-    ) external {
-        require(
-            hasRole(GRATIE_PLATFORM_ADMIN, _getMintSigner(_data, _signature)) == true,
-            "Invalid signer!"
-        );
+    ) external isBusiness {
         require(
             msg.sender == businessNFTs.ownerOf(_data.businessId),
             "Not the business owner!"
@@ -579,25 +604,32 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
             _data.mintNonce == ++rewardTokenMints[_data.businessId],
             "Invalid mint nonce!"
         );
-        require(
-            _data.lockInPercentage <= 10000,
-            "Invalid lock in percentage!"
-        );
+        require(_data.lockInPercentage <= 10000, "Invalid lock in percentage!");
 
         address rewardToken = businesses[_data.businessId].rewardToken;
         if (rewardToken == address(0)) {
             rewardToken = ClonesUpgradeable.clone(rewardTokenImplementation);
-            IERC20Mintable(rewardToken).initialize(_tokenName, _tokenSymbol, _tokenIconURL, address(this));
+            IERC20Mintable(rewardToken).initialize(
+                _tokenName,
+                _tokenSymbol,
+                _tokenIconURL,
+                address(this)
+            );
             businesses[_data.businessId].rewardToken = rewardToken;
         }
 
-        uint256 platformFee = (businessNftTiers[businesses[_data.businessId].businessNftTier].platformFee * _data.amount) / 10000;
+        uint256 platformFee = (businessNftTiers[
+            businesses[_data.businessId].businessNftTier
+        ].platformFee * _data.amount) / 10000;
         uint256 lockInAmount = (_data.lockInPercentage * _data.amount) / 10000;
         rewardTokensAvailable[_data.businessId] += lockInAmount;
 
         IERC20Mintable(rewardToken).mint(address(this), lockInAmount);
         IERC20Mintable(rewardToken).mint(owner(), platformFee);
-        IERC20Mintable(rewardToken).mint(msg.sender, _data.amount - platformFee - lockInAmount);
+        IERC20Mintable(rewardToken).mint(
+            msg.sender,
+            _data.amount - platformFee - lockInAmount
+        );
 
         emit RewardTokensGenerated(
             msg.sender,
@@ -614,28 +646,29 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         );
     }
 
-
     function startRewardDistribution(
         uint256 _businessID,
         uint256 _percentageToDistribute
-    ) external {
+    ) external isBusiness {
         require(
             msg.sender == businessNFTs.ownerOf(_businessID),
             "Not the business owner!"
         );
         require(
-            _percentageToDistribute > 0 &&
-            _percentageToDistribute <= 10000,
+            _percentageToDistribute > 0 && _percentageToDistribute <= 10000,
             "Invalid distribution percentage!"
         );
         require(
             rewardTokensAvailable[_businessID] > 0,
             "No reward tokens available to distribute!"
         );
-        uint256 tokensPerProvider = (_percentageToDistribute * rewardTokensAvailable[_businessID]) /
+        uint256 tokensPerProvider = (_percentageToDistribute *
+            rewardTokensAvailable[_businessID]) /
             (10000 * businesses[_businessID].totalServiceProviders);
 
-        rewardDistributions[_businessID][++rewardDistributionsCreated[_businessID]] = RewardTokenDistribution(
+        rewardDistributions[_businessID][
+            ++rewardDistributionsCreated[_businessID]
+        ] = RewardTokenDistribution(
             businesses[_businessID].totalServiceProviders,
             tokensPerProvider,
             block.timestamp,
@@ -655,28 +688,27 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         );
     }
 
-
     function claimRewardTokens(
         uint256 _businessID,
         uint256 _distributionNo
     ) external {
         require(
-            _businessID > 0 &&
-            _businessID <= totalBusinesses,
+            _businessID > 0 && _businessID <= totalBusinesses,
             "Invalid business id!"
         );
-        RewardTokenDistribution storage _distribution = rewardDistributions[_businessID][_distributionNo];
-        require(
-            _distribution.startTimestamp != 0,
-            "Invalid distribution no!"
-        );
+        RewardTokenDistribution storage _distribution = rewardDistributions[
+            _businessID
+        ][_distributionNo];
+        require(_distribution.startTimestamp != 0, "Invalid distribution no!");
         require(
             serviceProviderRegisteredAt[_businessID][msg.sender] > 0 &&
-            serviceProviderRegisteredAt[_businessID][msg.sender] <= _distribution.startTimestamp,
+                serviceProviderRegisteredAt[_businessID][msg.sender] <=
+                _distribution.startTimestamp,
             "Not eligible for this distribution!"
         );
         require(
-            hasClaimedRewards[msg.sender][_businessID][_distributionNo] == false,
+            hasClaimedRewards[msg.sender][_businessID][_distributionNo] ==
+                false,
             "Already Claimed!"
         );
 
@@ -685,7 +717,10 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         hasClaimedRewards[msg.sender][_businessID][_distributionNo] = true;
         _distribution.claimsDone += 1;
 
-        IERC20Upgradeable(businesses[_businessID].rewardToken).transfer(msg.sender, _distribution.tokensPerProvider);
+        IERC20Upgradeable(businesses[_businessID].rewardToken).transfer(
+            msg.sender,
+            _distribution.tokensPerProvider
+        );
 
         emit RewardTokensClaimed(
             msg.sender,
@@ -697,9 +732,8 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         );
     }
 
-    
     function _addBusinessNftTiers(BusinessNftTier[] memory _tiers) private {
-        for(uint256 i; i<_tiers.length;) {
+        for (uint256 i; i < _tiers.length; ) {
             unchecked {
                 businessNftTiers[++totalBusinessNftTiers] = _tiers[i];
                 emit BusinessNftTierAdded(
@@ -713,34 +747,42 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         }
     }
 
-
     function _addDivisionsInBusiness(
         uint256 _businessID,
         string[] memory _divisionNames,
         string[] memory _divisionMetadataURIs
-    ) private returns(ServiceProviderDivision[] memory) {
+    ) private returns (ServiceProviderDivision[] memory) {
         require(
             _divisionNames.length == _divisionMetadataURIs.length,
             "Invalid arrays!"
         );
 
-        ServiceProviderDivision[] memory _divisions = new ServiceProviderDivision[](_divisionNames.length);
-        for(uint256 i; i<_divisionNames.length;) {
+        ServiceProviderDivision[]
+            memory _divisions = new ServiceProviderDivision[](
+                _divisionNames.length
+            );
+        for (uint256 i; i < _divisionNames.length; ) {
             unchecked {
                 Business storage business = businesses[_businessID];
-                ServiceProviderDivision memory _newDivision = ServiceProviderDivision(
-                    _divisionNames[i],                                                                                                                                                                                                                                                                
-                    _divisionMetadataURIs[i],
-                    ++totalDivisions,
-                    0
-                );
+                ServiceProviderDivision
+                    memory _newDivision = ServiceProviderDivision(
+                        _divisionNames[i],
+                        _divisionMetadataURIs[i],
+                        ++totalDivisions,
+                        0
+                    );
                 _divisions[i] = _newDivision;
-                
-                business.serviceProviderDivisions[++business.divisionsInBusiness] = _newDivision;
+
+                business.serviceProviderDivisions[
+                    ++business.divisionsInBusiness
+                ] = _newDivision;
                 divisionNftIdToBusinessNftId[totalDivisions] = _businessID;
                 // Set Metadata URI
-                serviceProviderNFTs.setTokenURI(totalDivisions, _divisionMetadataURIs[i]);
-                
+                serviceProviderNFTs.setTokenURI(
+                    totalDivisions,
+                    _divisionMetadataURIs[i]
+                );
+
                 emit ServiceProviderDivisionAdded(
                     msg.sender,
                     _businessID,
@@ -756,13 +798,11 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
         return _divisions;
     }
 
-
     function sendValue(address recipient, uint256 amount) private {
         require(address(this).balance >= amount, "Insufficient matic balance!");
         (bool success, ) = payable(recipient).call{value: amount}("");
         require(success, "MATIC payment failed!");
     }
-
 
     function _getMintSigner(
         RewardTokenMint memory _data,
@@ -799,5 +839,14 @@ contract Gratie is AccessControlUpgradeable, OwnableUpgradeable, EIP712Upgradeab
             )
         );
         return ECDSAUpgradeable.recover(digest, _signature);
+    }
+
+    function changeAdminStatus(address _address, bool _status) public isAdmin {
+        adminAddresses[_address] = _status;
+    }
+
+    function changeBusinessStatus(address _address) public isAdmin {
+        require(!approvedBusinesses[_address], "Business already registered!");
+        approvedBusinesses[_address] = true;
     }
 }
