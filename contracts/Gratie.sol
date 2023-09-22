@@ -167,18 +167,16 @@ contract Gratie is
     mapping(address => mapping(uint256 => mapping(uint256 => bool)))
         public hasClaimedRewards;
     mapping(address => bool) public isValidPaymentMethod;
-    mapping(address => bool) public adminAddresses;
-    mapping(address => bool) public approvedBusinesses;
 
     // modifiers
-    modifier isAdmin() {
-        bool allowed = adminAddresses[msg.sender];
+    modifier isPlatformAdmin() {
+        bool allowed = hasRole(GRATIE_PLATFORM_ADMIN, msg.sender);
         require(allowed, "Only Admin is Allowed!");
         _;
     }
 
-    modifier isBusiness() {
-        bool allowed = approvedBusinesses[msg.sender];
+    modifier isDefaultAdmin() {
+        bool allowed = hasRole(DEFAULT_ADMIN_ROLE, msg.sender);
         require(allowed, "Only Business is Allowed!");
         _;
     }
@@ -338,7 +336,7 @@ contract Gratie is
         string[] memory _divisionNames,
         string[] memory _divisionMetadataURIs,
         Payment memory _payment
-    ) external payable {
+    ) external payable isDefaultAdmin {
         require(
             _businessData.businessNftTier > 0 &&
                 _businessData.businessNftTier <= totalBusinessNftTiers,
@@ -595,7 +593,7 @@ contract Gratie is
         string memory _tokenName,
         string memory _tokenSymbol,
         string memory _tokenIconURL
-    ) external {
+    ) external isPlatformAdmin {
         require(
             msg.sender == businessNFTs.ownerOf(_data.businessId),
             "Not the business owner!"
@@ -840,4 +838,13 @@ contract Gratie is
         );
         return ECDSAUpgradeable.recover(digest, _signature);
     }
+
+    // function grantAdminRole(address _address, bool _status) public isAdmin {
+    //     adminAddresses[_address] = _status;
+    // }
+    //
+    // function changeBusinessStatus(address _address) public isAdmin {
+    //     require(!approvedBusinesses[_address], "Business already registered!");
+    //     approvedBusinesses[_address] = true;
+    // }
 }
