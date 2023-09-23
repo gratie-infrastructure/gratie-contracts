@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;  
 
-import "@openzeppelin/contracts-upgradeable/interfaces/IERC721Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/interfaces/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/interfaces/IERC721Upgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/proxy/ClonesUpgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/interfaces/IERC20Upgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 interface IERC721 is IERC721Upgradeable {
     function mint(
         address _receiver,

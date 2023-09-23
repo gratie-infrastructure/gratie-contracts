@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "@openzeppelin/contracts-upgradeable/interfaces/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/interfaces/IERC721Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/interfaces/IERC1155Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/interfaces/IERC20Upgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/interfaces/IERC721Upgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/interfaces/IERC1155Upgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
+import "penzeppelin-contracts-upgradeable/contracts/utils/cryptography/EIP712Upgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/proxy/ClonesUpgradeable.sol";
 
 interface IERC20Mintable is IERC20Upgradeable {
     function mint(
