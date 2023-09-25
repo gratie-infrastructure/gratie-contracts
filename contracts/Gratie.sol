@@ -305,14 +305,14 @@ contract Gratie is
         usdc = IERC20Upgradeable(_initData.usdcContractAddress);
         rewardTokenImplementation = _initData.rewardTokenImplementation;
 
-        for (uint256 i = 0; i < _initData.gratiePlatformAdmins.length; i++) {
+        for (uint256 i; i < _initData.gratiePlatformAdmins.length; i++) {
             _grantRole(
                 GRATIE_PLATFORM_ADMIN,
                 _initData.gratiePlatformAdmins[i]
             );
         }
 
-        for (uint256 i = 0; i < _initData.paymentMethods.length; i++) {
+        for (uint256 i; i < _initData.paymentMethods.length; i++) {
             isValidPaymentMethod[_initData.paymentMethods[i]] = true;
         }
 

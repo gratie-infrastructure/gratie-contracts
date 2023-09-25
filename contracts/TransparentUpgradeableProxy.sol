@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
  * mechanism. The compiler is unaware that these functions are implemented by {TransparentUpgradeableProxy} and will not
  * include them in the ABI so this interface must be used to interact with it.
  */
-interface ITransparentUpgradeableProxyCustom is IERC1967 {
+interface ITransparentUpgradeableProxy is IERC1967 {
     function changeAdmin(address) external;
 
     function upgradeTo(address) external;
@@ -51,7 +51,7 @@ interface ITransparentUpgradeableProxyCustom is IERC1967 {
  * and the functions declared in {ITransparentUpgradeableProxy} will be resolved in favor of the new one. This could
  * render the admin operations inaccessible, which could prevent upgradeability. Transparency may also be compromised.
  */
-contract TransparentUpgradeableProxyCustom is ERC1967Proxy {
+contract TransparentUpgradeableProxy is ERC1967Proxy {
     /**
      * @dev The proxy caller is the current admin, and can't fallback to the proxy target.
      */
@@ -81,19 +81,15 @@ contract TransparentUpgradeableProxyCustom is ERC1967Proxy {
         if (msg.sender == _getAdmin()) {
             bytes memory ret;
             bytes4 selector = msg.sig;
-            if (
-                selector ==
-                ITransparentUpgradeableProxyCustom.upgradeTo.selector
-            ) {
+            if (selector == ITransparentUpgradeableProxy.upgradeTo.selector) {
                 ret = _dispatchUpgradeTo();
             } else if (
                 selector ==
-                ITransparentUpgradeableProxyCustom.upgradeToAndCall.selector
+                ITransparentUpgradeableProxy.upgradeToAndCall.selector
             ) {
                 ret = _dispatchUpgradeToAndCall();
             } else if (
-                selector ==
-                ITransparentUpgradeableProxyCustom.changeAdmin.selector
+                selector == ITransparentUpgradeableProxy.changeAdmin.selector
             ) {
                 ret = _dispatchChangeAdmin();
             } else {

@@ -23,7 +23,10 @@ contract ProxyAdmin is Ownable {
      *
      * - This contract must be the current admin of `proxy`.
      */
-    function changeProxyAdmin(ITransparentUpgradeableProxy proxy, address newAdmin) public virtual onlyOwner {
+    function changeProxyAdmin(
+        ITransparentUpgradeableProxy proxy,
+        address newAdmin
+    ) public virtual onlyOwner {
         proxy.changeAdmin(newAdmin);
     }
 
@@ -34,7 +37,10 @@ contract ProxyAdmin is Ownable {
      *
      * - This contract must be the admin of `proxy`.
      */
-    function upgrade(ITransparentUpgradeableProxy proxy, address implementation) public virtual onlyOwner {
+    function upgrade(
+        ITransparentUpgradeableProxy proxy,
+        address implementation
+    ) public virtual onlyOwner {
         proxy.upgradeTo(implementation);
     }
 

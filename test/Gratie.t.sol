@@ -11,16 +11,15 @@ import "../contracts/ProxyAdmin.sol";
 import "../contracts/RewardToken.sol";
 import "../contracts/BusinessNFTs.sol";
 import "../contracts/ServiceProviderNFTs.sol";
-import "../contracts/TransparentUpgradeableProxy.sol";
 
 contract GratieTest is Test {
-    Gratie public gratieContract;
+    Gratie public gratie;
     USDCMock public usdcContract;
     ProxyAdmin public proxyAdmin;
     RewardToken public rewardToken;
     BusinessNFT public businessNft;
     ServiceProviderNFT public serviceProviderNft;
-    TransparentUpgradeableProxyCustom public transparentUpgradeableProxy;
+    TransparentUpgradeableProxy public transparentUpgradeableProxy;
 
     struct BusinessNftTier {
         string name;
@@ -46,15 +45,27 @@ contract GratieTest is Test {
         BusinessNftTier[] businessNftTiers;
     }
 
+    struct BusinessData {
+        string name;
+        string email;
+        string nftMetadataURI;
+        uint256 businessNftTier;
+    }
+
+    struct Payment {
+        address method;
+        uint256 amount;
+    }
+
     function setUp() public {
-        gratieContract = new Gratie();
+        gratie = new Gratie();
         usdcContract = new USDCMock();
-        proxyAdmin = new ProxyAdmin(address(1337));
+        proxyAdmin = new ProxyAdmin(address(500));
         rewardToken = new RewardToken();
         businessNft = new BusinessNFT();
         serviceProviderNft = new ServiceProviderNFT();
 
-        BusinessNftTier[] memory _businessNftTier;
+        BusinessNftTier[] memory _businessNftTier = new BusinessNftTier[](1);
 
         _businessNftTier[0].name = "Test";
         _businessNftTier[0].ipfsMetadataLink = "ipfs://something";
@@ -64,50 +75,70 @@ contract GratieTest is Test {
         _businessNftTier[0].platformFee = 2;
         _businessNftTier[0].isActive = true;
 
-        address[] memory gratiePlatformAdmins;
+        address[] memory gratiePlatformAdmins = new address[](1);
         gratiePlatformAdmins[0] = address(1000);
 
-        address[] memory paymentMethods;
-        paymentMethods[0] = address(999);
+        address[] memory paymentMethods = new address[](2);
+        paymentMethods[0] = address(usdcContract);
+        paymentMethods[1] = address(0);
 
-        InitData memory _initData;
-        _initData.domainName = "gratie.com";
-        _initData.domainVersion = "v1";
-        _initData.platformFeeReceiver = address(700);
-        _initData.businessNFTs = address(businessNft);
-        _initData.serviceProviderNFTs = address(serviceProviderNft);
-        _initData.rewardTokenImplementation = address(rewardToken);
-        _initData.defaultAdminAddress = address(777);
-        _initData.usdcContractAddress = address(usdcContract);
-        _initData.paymentMethods = paymentMethods;
-        _initData.gratiePlatformAdmins = gratiePlatformAdmins;
-        _initData.businessNftTiers = _businessNftTier;
+        InitData memory _initData = InitData({
+            domainName: "gratie.com",
+            domainVersion: "v1",
+            platformFeeReceiver: address(700),
+            businessNFTs: address(businessNft),
+            serviceProviderNFTs: address(serviceProviderNft),
+            rewardTokenImplementation: address(rewardToken),
+            defaultAdminAddress: address(777),
+            usdcContractAddress: address(usdcContract),
+            paymentMethods: paymentMethods,
+            gratiePlatformAdmins: gratiePlatformAdmins,
+            businessNftTiers: _businessNftTier
+        });
 
-        transparentUpgradeableProxy = new TransparentUpgradeableProxyCustom(
-            address(gratieContract),
+        transparentUpgradeableProxy = new TransparentUpgradeableProxy(
+            address(gratie),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(string,string,address,address,address,address,address,address,address[],address[],(string,string,uint256,uint256,uint256,uint256,bool)[])",
-                _initData.domainName,
-                _initData.domainVersion,
-                _initData.platformFeeReceiver,
-                _initData.businessNFTs,
-                _initData.serviceProviderNFTs,
-                _initData.rewardTokenImplementation,
-                _initData.defaultAdminAddress,
-                _initData.usdcContractAddress,
-                _initData.paymentMethods,
-                _initData.gratiePlatformAdmins,
-                _initData.businessNftTiers
+                "initialize((string,string,address,address,address,address,address,address,address[],address[],(string,string,uint256,uint256,uint256,uint256,bool)[]))",
+                _initData
             )
         );
 
-        gratieContract = Gratie(address(transparentUpgradeableProxy));
+        gratie = Gratie(address(transparentUpgradeableProxy));
+        console.log("Gratie Address: ", address(gratie));
 
         // transparentUpgradeableProxy.initialize(_initData);
     }
 
-    function testIsValidPaymentMethodsAreSet() public view {
-        assert(gratieContract.isValidPaymentMethod(address(999)));
+    function testIsDomainNameIsSet() public {
+        string memory _name = "gratie.com";
+        bytes32 name = keccak256(abi.encodePacked(_name));
+        bytes32 domain = keccak256(abi.encodePacked(gratie.domainName()));
+        assertTrue(domain == name);
+    }
+
+    function testBusinessCanRegister() public {
+        BusinessData memory _businessData = BusinessData({
+            name: "Zoo",
+            email: "Zoo@gratie.com",
+            nftMetadataURI: "ipfs://zoodata/metadata.json",
+            businessNftTier: 1
+        });
+
+        string[] memory _divisionNames = new string[](1);
+        _divisionNames[0] = "Zoo1";
+
+        string[] memory _divisionMetadataURIs = new string[](1);
+        _divisionNames[0] = "ipfs://zoodata/metadata1.json";
+
+        Payment memory _payment = Payment({method: address(0), amount: 1});
+
+        gratie.registerBusiness{value: 1}(
+            _businessData,
+            _divisionNames,
+            _divisionMetadataURIs,
+            _payment
+        );
     }
 }
