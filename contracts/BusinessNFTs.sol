@@ -3,25 +3,21 @@ pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 
-
 contract BusinessNFT is ERC721URIStorageUpgradeable {
-
     address public gratieContract;
     uint256 public totalSupply;
 
     modifier onlyGratieContract() {
-        require(
-            msg.sender == gratieContract,
-            "Only Gratie Contract allowed!"
-        );
+        require(msg.sender == gratieContract, "Only Gratie Contract allowed!");
         _;
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor(address _gratieContract) {
+        gratieContract = _gratieContract;
         _disableInitializers();
     }
-    
+
     function initialize(
         string memory _name,
         string memory _symbol
@@ -29,7 +25,9 @@ contract BusinessNFT is ERC721URIStorageUpgradeable {
         __ERC721_init(_name, _symbol);
     }
 
-    function setGratieContract(address _gratieContract) external reinitializer(2) {
+    function setGratieContract(
+        address _gratieContract
+    ) external reinitializer(2) {
         gratieContract = _gratieContract;
     }
 
@@ -43,7 +41,6 @@ contract BusinessNFT is ERC721URIStorageUpgradeable {
         _setTokenURI(_tokenId, _tokenURI);
     }
 
-
     function mintBatch(
         address[] calldata _receivers,
         uint256[] calldata _tokenIds,
@@ -51,14 +48,16 @@ contract BusinessNFT is ERC721URIStorageUpgradeable {
     ) external onlyGratieContract {
         require(
             _receivers.length == _tokenIds.length &&
-            _receivers.length == _tokenURIs.length,
+                _receivers.length == _tokenURIs.length,
             "Invalid array lengths!"
         );
         totalSupply += _tokenIds.length;
-        for(uint256 i; i<_receivers.length;) {
+        for (uint256 i; i < _receivers.length; ) {
             _safeMint(_receivers[i], _tokenIds[i]);
             _setTokenURI(_tokenIds[i], _tokenURIs[i]);
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
     }
 }

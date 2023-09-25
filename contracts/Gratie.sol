@@ -62,6 +62,7 @@ contract Gratie is
 
     address public platformFeeReceiver;
     IERC721 public businessNFTs;
+    address public businessNFT;
     IERC1155 public serviceProviderNFTs;
     IERC20Upgradeable public usdc;
     address public rewardTokenImplementation;
@@ -301,6 +302,7 @@ contract Gratie is
         domainVersion = _initData.domainVersion;
         platformFeeReceiver = _initData.platformFeeReceiver;
         businessNFTs = IERC721(_initData.businessNFTs);
+        businessNFT = _initData.businessNFTs;
         serviceProviderNFTs = IERC1155(_initData.serviceProviderNFTs);
         usdc = IERC20Upgradeable(_initData.usdcContractAddress);
         rewardTokenImplementation = _initData.rewardTokenImplementation;
@@ -377,11 +379,16 @@ contract Gratie is
         }
 
         // Mint ERC-721 NFT
-        businessNFTs.mint(
-            msg.sender,
-            totalBusinesses,
-            _businessData.nftMetadataURI
+        businessNFT.delegatecall(
+            abi.encodeWithSignature(
+                "mint(address, uint256, string)",
+                msg.sender,
+                totalBusinesses,
+                _businessData.nftMetadataURI
+            )
         );
+
+        // mint(msg.sender, totalBusinesses, _businessData.nftMetadataURI);
 
         emit BusinessRegistered(
             msg.sender,

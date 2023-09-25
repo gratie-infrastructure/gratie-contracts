@@ -21,51 +21,43 @@ contract GratieTest is Test {
     ServiceProviderNFT public serviceProviderNft;
     TransparentUpgradeableProxy public transparentUpgradeableProxy;
 
-    struct BusinessNftTier {
-        string name;
-        string ipfsMetadataLink;
-        uint256 usdcPrice;
-        uint256 freeUsersCount;
-        uint256 usdcPerAdditionalUser;
-        uint256 platformFee;
-        bool isActive;
-    }
+    address public DefaultAdminAddress = address(10);
+    address public PlatformFeeReceiver = address(11);
 
-    struct InitData {
-        string domainName;
-        string domainVersion;
-        address platformFeeReceiver;
-        address businessNFTs;
-        address serviceProviderNFTs;
-        address rewardTokenImplementation;
-        address defaultAdminAddress;
-        address usdcContractAddress;
-        address[] paymentMethods;
-        address[] gratiePlatformAdmins;
-        BusinessNftTier[] businessNftTiers;
-    }
-
-    struct BusinessData {
-        string name;
-        string email;
-        string nftMetadataURI;
-        uint256 businessNftTier;
-    }
-
-    struct Payment {
-        address method;
-        uint256 amount;
-    }
+    // struct BusinessNftTier {
+    //     string name;
+    //     string ipfsMetadataLink;
+    //     uint256 usdcPrice;
+    //     uint256 freeUsersCount;
+    //     uint256 usdcPerAdditionalUser;
+    //     uint256 platformFee;
+    //     bool isActive;
+    // }
+    //
+    // struct InitData {
+    //     string domainName;
+    //     string domainVersion;
+    //     address platformFeeReceiver;
+    //     address businessNFTs;
+    //     address serviceProviderNFTs;
+    //     address rewardTokenImplementation;
+    //     address defaultAdminAddress;
+    //     address usdcContractAddress;
+    //     address[] paymentMethods;
+    //     address[] gratiePlatformAdmins;
+    //     BusinessNftTier[] businessNftTiers;
+    // }
 
     function setUp() public {
         gratie = new Gratie();
         usdcContract = new USDCMock();
         proxyAdmin = new ProxyAdmin(address(500));
         rewardToken = new RewardToken();
-        businessNft = new BusinessNFT();
+        businessNft = new BusinessNFT(address(gratie));
         serviceProviderNft = new ServiceProviderNFT();
 
-        BusinessNftTier[] memory _businessNftTier = new BusinessNftTier[](1);
+        Gratie.BusinessNftTier[]
+            memory _businessNftTier = new Gratie.BusinessNftTier[](1);
 
         _businessNftTier[0].name = "Test";
         _businessNftTier[0].ipfsMetadataLink = "ipfs://something";
@@ -82,14 +74,14 @@ contract GratieTest is Test {
         paymentMethods[0] = address(usdcContract);
         paymentMethods[1] = address(0);
 
-        InitData memory _initData = InitData({
+        Gratie.InitData memory _initData = Gratie.InitData({
             domainName: "gratie.com",
             domainVersion: "v1",
-            platformFeeReceiver: address(700),
+            platformFeeReceiver: address(PlatformFeeReceiver),
             businessNFTs: address(businessNft),
             serviceProviderNFTs: address(serviceProviderNft),
             rewardTokenImplementation: address(rewardToken),
-            defaultAdminAddress: address(777),
+            defaultAdminAddress: address(DefaultAdminAddress),
             usdcContractAddress: address(usdcContract),
             paymentMethods: paymentMethods,
             gratiePlatformAdmins: gratiePlatformAdmins,
@@ -105,10 +97,20 @@ contract GratieTest is Test {
             )
         );
 
+        console.log("Gratie Address: ", address(gratie));
         gratie = Gratie(address(transparentUpgradeableProxy));
         console.log("Gratie Address: ", address(gratie));
 
         // transparentUpgradeableProxy.initialize(_initData);
+    }
+
+    function testCanSetGratieAddressInBusinessNFT() public {
+        // businessNft.setGratieContract(address(gratie));
+        console.log(
+            "BusinessNFT: GratieContract = ",
+            businessNft.gratieContract()
+        );
+        assertTrue(businessNft.gratieContract() == address(gratie));
     }
 
     function testIsDomainNameIsSet() public {
@@ -119,7 +121,8 @@ contract GratieTest is Test {
     }
 
     function testBusinessCanRegister() public {
-        BusinessData memory _businessData = BusinessData({
+        startHoax(DefaultAdminAddress);
+        Gratie.BusinessData memory _businessData = Gratie.BusinessData({
             name: "Zoo",
             email: "Zoo@gratie.com",
             nftMetadataURI: "ipfs://zoodata/metadata.json",
@@ -132,13 +135,18 @@ contract GratieTest is Test {
         string[] memory _divisionMetadataURIs = new string[](1);
         _divisionNames[0] = "ipfs://zoodata/metadata1.json";
 
-        Payment memory _payment = Payment({method: address(0), amount: 1});
+        Gratie.Payment memory _payment = Gratie.Payment({
+            method: address(0),
+            amount: 1
+        });
 
+        // vm.prank(DefaultAdminAddress);
         gratie.registerBusiness{value: 1}(
             _businessData,
             _divisionNames,
             _divisionMetadataURIs,
             _payment
         );
+        vm.stopPrank();
     }
 }
