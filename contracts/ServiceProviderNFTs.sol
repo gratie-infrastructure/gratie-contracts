@@ -3,10 +3,12 @@ pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155URIStorageUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract ServiceProviderNFT is
     ERC1155SupplyUpgradeable,
-    ERC1155URIStorageUpgradeable
+    ERC1155URIStorageUpgradeable,
+    OwnableUpgradeable
 {
     string public name;
     string public symbol;
@@ -18,15 +20,16 @@ contract ServiceProviderNFT is
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address _gratieContract) {
-        gratieContract = _gratieContract;
-        _disableInitializers();
-    }
+    // constructor(address _gratieContract) {
+    //     gratieContract = _gratieContract;
+    //     _disableInitializers();
+    // }
 
     function initialize(
         string memory _name,
         string memory _symbol
     ) external initializer {
+        __Ownable_init();
         name = _name;
         symbol = _symbol;
     }
@@ -37,7 +40,10 @@ contract ServiceProviderNFT is
         gratieContract = _gratieContract;
     }
 
-    function setTokenURI(uint256 _tokenId, string memory _tokenURI) external {
+    function setTokenURI(
+        uint256 _tokenId,
+        string memory _tokenURI
+    ) external onlyOwner {
         _setURI(_tokenId, _tokenURI);
     }
 
@@ -45,7 +51,7 @@ contract ServiceProviderNFT is
         address _receiver,
         uint256 _tokenId,
         uint256 _amount
-    ) external onlyGratieContract {
+    ) external onlyOwner {
         _mint(_receiver, _tokenId, _amount, "");
     }
 
@@ -53,7 +59,7 @@ contract ServiceProviderNFT is
         address[] calldata _receivers,
         uint256[] calldata _tokenIds,
         uint256[] calldata _amounts
-    ) external onlyGratieContract {
+    ) external onlyOwner {
         require(
             _receivers.length == _tokenIds.length,
             "Invalid array lengths!"
@@ -73,7 +79,7 @@ contract ServiceProviderNFT is
         uint256 id,
         uint256 amount,
         bytes memory data
-    ) public virtual override onlyGratieContract {
+    ) public virtual override onlyOwner {
         super.safeTransferFrom(from, to, id, amount, data);
     }
 
@@ -83,7 +89,7 @@ contract ServiceProviderNFT is
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory data
-    ) public virtual override onlyGratieContract {
+    ) public virtual override onlyOwner {
         super.safeBatchTransferFrom(from, to, ids, amounts, data);
     }
 
@@ -91,7 +97,7 @@ contract ServiceProviderNFT is
         address _from,
         uint256 _id,
         uint256 _amount
-    ) external onlyGratieContract {
+    ) external onlyOwner {
         _burn(_from, _id, _amount);
     }
 
@@ -99,7 +105,7 @@ contract ServiceProviderNFT is
         address _from,
         uint256[] memory _ids,
         uint256[] memory _amounts
-    ) external onlyGratieContract {
+    ) external onlyOwner {
         _burnBatch(_from, _ids, _amounts);
     }
 

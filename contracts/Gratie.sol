@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
 import "./BusinessNFTs.sol";
+import "./ServiceProviderNFTs.sol";
 
 interface IERC20Mintable is IERC20Upgradeable {
     function mint(address _receiver, uint256 _amount) external;
@@ -64,7 +65,7 @@ contract Gratie is
     address public platformFeeReceiver;
     BusinessNFT public businessNFTs;
     BusinessNFT public businessNFT;
-    IERC1155 public serviceProviderNFTs;
+    ServiceProviderNFT public serviceProviderNFTs;
     address public serviceProviderNFT;
     IERC20Upgradeable public usdc;
     address public rewardTokenImplementation;
@@ -304,9 +305,9 @@ contract Gratie is
         domainVersion = _initData.domainVersion;
         platformFeeReceiver = _initData.platformFeeReceiver;
         businessNFTs = BusinessNFT(_initData.businessNFTs);
-        businessNFTs.initialize("GratieNFT", "GNFT");
-        serviceProviderNFTs = IERC1155(_initData.serviceProviderNFTs);
-        serviceProviderNFT = _initData.serviceProviderNFTs;
+        businessNFTs.initialize("Gratie Business NFTs", "GBN");
+        serviceProviderNFTs = ServiceProviderNFT(_initData.serviceProviderNFTs);
+        serviceProviderNFTs.initialize("Gratie Service Provider NFTs", "GSPN");
         usdc = IERC20Upgradeable(_initData.usdcContractAddress);
         rewardTokenImplementation = _initData.rewardTokenImplementation;
 

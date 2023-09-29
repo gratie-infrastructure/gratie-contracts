@@ -57,7 +57,7 @@ contract GratieTest is Test {
         proxyAdmin = new ProxyAdmin(address(500));
         rewardToken = new RewardToken();
         businessNft = new BusinessNFT();
-        serviceProviderNft = new ServiceProviderNFT(address(gratie));
+        serviceProviderNft = new ServiceProviderNFT();
 
         Gratie.BusinessNftTier[]
             memory _businessNftTier = new Gratie.BusinessNftTier[](1);

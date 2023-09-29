@@ -7,7 +7,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 contract BusinessNFT is ERC721URIStorageUpgradeable, OwnableUpgradeable {
     address public gratieContract;
     uint256 public totalSupply;
-    address public whoCalled;
 
     event Minted(
         address reciever,
@@ -45,7 +44,6 @@ contract BusinessNFT is ERC721URIStorageUpgradeable, OwnableUpgradeable {
         uint256 _tokenId,
         string memory _tokenURI
     ) external onlyOwner {
-        whoCalled = address(msg.sender);
         ++totalSupply;
         _safeMint(_receiver, _tokenId);
         _setTokenURI(_tokenId, _tokenURI);
