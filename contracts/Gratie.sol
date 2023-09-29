@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
+import "./BusinessNFTs.sol";
 
 interface IERC20Mintable is IERC20Upgradeable {
     function mint(address _receiver, uint256 _amount) external;
@@ -61,9 +62,10 @@ contract Gratie is
     string public domainVersion;
 
     address public platformFeeReceiver;
-    IERC721 public businessNFTs;
-    address public businessNFT;
+    BusinessNFT public businessNFTs;
+    BusinessNFT public businessNFT;
     IERC1155 public serviceProviderNFTs;
+    address public serviceProviderNFT;
     IERC20Upgradeable public usdc;
     address public rewardTokenImplementation;
 
@@ -301,9 +303,10 @@ contract Gratie is
         domainName = _initData.domainName;
         domainVersion = _initData.domainVersion;
         platformFeeReceiver = _initData.platformFeeReceiver;
-        businessNFTs = IERC721(_initData.businessNFTs);
-        businessNFT = _initData.businessNFTs;
+        businessNFTs = BusinessNFT(_initData.businessNFTs);
+        businessNFTs.initialize("GratieNFT", "GNFT");
         serviceProviderNFTs = IERC1155(_initData.serviceProviderNFTs);
+        serviceProviderNFT = _initData.serviceProviderNFTs;
         usdc = IERC20Upgradeable(_initData.usdcContractAddress);
         rewardTokenImplementation = _initData.rewardTokenImplementation;
 
@@ -332,7 +335,7 @@ contract Gratie is
         string[] memory _divisionNames,
         string[] memory _divisionMetadataURIs,
         Payment memory _payment
-    ) external payable isDefaultAdmin {
+    ) external payable {
         require(
             _businessData.businessNftTier > 0 &&
                 _businessData.businessNftTier <= totalBusinessNftTiers,
@@ -379,16 +382,21 @@ contract Gratie is
         }
 
         // Mint ERC-721 NFT
-        businessNFT.delegatecall(
-            abi.encodeWithSignature(
-                "mint(address, uint256, string)",
-                msg.sender,
-                totalBusinesses,
-                _businessData.nftMetadataURI
-            )
-        );
+        // address(businessNFT).call(
+        //     abi.encodeWithSignature(
+        //         "mint(address, uint256, string)",
+        //         address(msg.sender),
+        //         totalBusinesses,
+        //         _businessData.nftMetadataURI
+        //     )
+        // );
+        // require(success, "Minting failed");
 
-        // mint(msg.sender, totalBusinesses, _businessData.nftMetadataURI);
+        businessNFTs.mint(
+            msg.sender,
+            totalBusinesses,
+            _businessData.nftMetadataURI
+        );
 
         emit BusinessRegistered(
             msg.sender,
@@ -594,7 +602,7 @@ contract Gratie is
         string memory _tokenName,
         string memory _tokenSymbol,
         string memory _tokenIconURL
-    ) external isPlatformAdmin {
+    ) external {
         require(
             msg.sender == businessNFTs.ownerOf(_data.businessId),
             "Not the business owner!"
@@ -777,6 +785,14 @@ contract Gratie is
                 ] = _newDivision;
                 divisionNftIdToBusinessNftId[totalDivisions] = _businessID;
                 // Set Metadata URI
+                //  serviceProviderNFT.call(
+                //     abi.encodeWithSignature(
+                //         "setTokenURI(uint256, string)",
+                //         totalDivisions,
+                //         _divisionMetadataURIs[i]
+                //     )
+                // );
+
                 serviceProviderNFTs.setTokenURI(
                     totalDivisions,
                     _divisionMetadataURIs[i]

@@ -2,10 +2,19 @@
 pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract BusinessNFT is ERC721URIStorageUpgradeable {
+contract BusinessNFT is ERC721URIStorageUpgradeable, OwnableUpgradeable {
     address public gratieContract;
     uint256 public totalSupply;
+    address public whoCalled;
+
+    event Minted(
+        address reciever,
+        uint256 tokenId,
+        string metadataURI,
+        string name
+    );
 
     modifier onlyGratieContract() {
         require(msg.sender == gratieContract, "Only Gratie Contract allowed!");
@@ -13,15 +22,15 @@ contract BusinessNFT is ERC721URIStorageUpgradeable {
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address _gratieContract) {
-        gratieContract = _gratieContract;
-        _disableInitializers();
-    }
+    // constructor() {
+    //     _disableInitializers();
+    // }
 
     function initialize(
-        string memory _name,
-        string memory _symbol
+        string calldata _name,
+        string calldata _symbol
     ) external initializer {
+        __Ownable_init();
         __ERC721_init(_name, _symbol);
     }
 
@@ -35,10 +44,12 @@ contract BusinessNFT is ERC721URIStorageUpgradeable {
         address _receiver,
         uint256 _tokenId,
         string memory _tokenURI
-    ) external onlyGratieContract {
+    ) external onlyOwner {
+        whoCalled = address(msg.sender);
         ++totalSupply;
         _safeMint(_receiver, _tokenId);
         _setTokenURI(_tokenId, _tokenURI);
+        emit Minted(_receiver, totalSupply, _tokenURI, name());
     }
 
     function mintBatch(

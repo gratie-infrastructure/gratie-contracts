@@ -3,18 +3,12 @@ pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
-
-
 contract RewardToken is ERC20Upgradeable {
-
     address public gratieContract;
     string public iconURI;
 
     modifier onlyGratieContract() {
-        require(
-            msg.sender == gratieContract,
-            "Only Gratie Contract allowed!"
-        );
+        require(msg.sender == gratieContract, "Only Gratie Contract allowed!");
         _;
     }
 

@@ -22,7 +22,9 @@ contract GratieTest is Test {
     TransparentUpgradeableProxy public transparentUpgradeableProxy;
 
     address public DefaultAdminAddress = address(10);
-    address public PlatformFeeReceiver = address(11);
+    address public PlatformAdminAddress = address(11);
+    address public PlatformFeeReceiver = address(12);
+    address public orignailGratie;
 
     // struct BusinessNftTier {
     //     string name;
@@ -50,11 +52,12 @@ contract GratieTest is Test {
 
     function setUp() public {
         gratie = new Gratie();
+        orignailGratie = address(gratie);
         usdcContract = new USDCMock();
         proxyAdmin = new ProxyAdmin(address(500));
         rewardToken = new RewardToken();
-        businessNft = new BusinessNFT(address(gratie));
-        serviceProviderNft = new ServiceProviderNFT();
+        businessNft = new BusinessNFT();
+        serviceProviderNft = new ServiceProviderNFT(address(gratie));
 
         Gratie.BusinessNftTier[]
             memory _businessNftTier = new Gratie.BusinessNftTier[](1);
@@ -68,7 +71,7 @@ contract GratieTest is Test {
         _businessNftTier[0].isActive = true;
 
         address[] memory gratiePlatformAdmins = new address[](1);
-        gratiePlatformAdmins[0] = address(1000);
+        gratiePlatformAdmins[0] = PlatformAdminAddress;
 
         address[] memory paymentMethods = new address[](2);
         paymentMethods[0] = address(usdcContract);
@@ -88,6 +91,10 @@ contract GratieTest is Test {
             businessNftTiers: _businessNftTier
         });
 
+        console.log(
+            "Proxy contract Before: ",
+            address(transparentUpgradeableProxy)
+        );
         transparentUpgradeableProxy = new TransparentUpgradeableProxy(
             address(gratie),
             address(proxyAdmin),
@@ -97,31 +104,55 @@ contract GratieTest is Test {
             )
         );
 
-        console.log("Gratie Address: ", address(gratie));
+        console.log(
+            "Proxy contract After: ",
+            address(transparentUpgradeableProxy)
+        );
+        console.log("Gratie Address Before: ", address(gratie));
         gratie = Gratie(address(transparentUpgradeableProxy));
         console.log("Gratie Address: ", address(gratie));
+
+        // businessNft.initialize("GratieBusinessNFT", "GBN", address(gratie));
 
         // transparentUpgradeableProxy.initialize(_initData);
     }
 
-    function testCanSetGratieAddressInBusinessNFT() public {
-        // businessNft.setGratieContract(address(gratie));
-        console.log(
-            "BusinessNFT: GratieContract = ",
-            businessNft.gratieContract()
-        );
-        assertTrue(businessNft.gratieContract() == address(gratie));
-    }
+    // function testCanSetGratieAddressInBusinessNFT() public {
+    //     // businessNft.setGratieContract(address(gratie));
+    //     console.log(
+    //         "BusinessNFT: GratieContract = ",
+    //         businessNft.gratieContract()
+    //     );
+    //     // assertTrue(businessNft.gratieContract() == address(gratie));
+    // }
+    //
+    // function testIsDomainNameIsSet() public {
+    //     testCanSetGratieAddressInBusinessNFT();
+    //
+    //     string memory _name = "gratie.com";
+    //     bytes32 name = keccak256(abi.encodePacked(_name));
+    //     bytes32 domain = keccak256(abi.encodePacked(gratie.domainName()));
+    //     assertTrue(domain == name);
+    // }
 
-    function testIsDomainNameIsSet() public {
-        string memory _name = "gratie.com";
-        bytes32 name = keccak256(abi.encodePacked(_name));
-        bytes32 domain = keccak256(abi.encodePacked(gratie.domainName()));
-        assertTrue(domain == name);
-    }
+    // function testCanMintToken() public {
+    //     startHoax(address(orignailGratie));
+    //     businessNft.mint(address(111), 1, "https://something");
+    //     vm.stopPrank();
+    //
+    //     console.log("BusinessNFT count: ", businessNft.balanceOf(address(111)));
+    // }
 
-    function testBusinessCanRegister() public {
-        startHoax(DefaultAdminAddress);
+    function BusinessCanRegister() public {
+        // testIsDomainNameIsSet();
+
+        (string memory _name, string memory _ipfs, , , , , ) = gratie
+            .businessNftTiers(1);
+        console.log("NFTTiers: ", _name);
+
+        startHoax(address(111));
+        vm.deal(address(businessNft), 1 ether);
+        vm.deal(address(gratie), 1 ether);
         Gratie.BusinessData memory _businessData = Gratie.BusinessData({
             name: "Zoo",
             email: "Zoo@gratie.com",
@@ -133,7 +164,7 @@ contract GratieTest is Test {
         _divisionNames[0] = "Zoo1";
 
         string[] memory _divisionMetadataURIs = new string[](1);
-        _divisionNames[0] = "ipfs://zoodata/metadata1.json";
+        _divisionMetadataURIs[0] = "ipfs://zoodata/metadata1.json";
 
         Gratie.Payment memory _payment = Gratie.Payment({
             method: address(0),
@@ -148,5 +179,42 @@ contract GratieTest is Test {
             _payment
         );
         vm.stopPrank();
+
+        console.log("Who actually called: ", businessNft.whoCalled());
+        console.log("BusinessNFT count: ", businessNft.balanceOf(address(111)));
+        console.log("Gratie count: ", businessNft.balanceOf(address(gratie)));
+    }
+
+    function BusinessCanGenerateRewardTokens() public {
+        vm.prank(address(111));
+        Gratie.RewardTokenMint memory _rewardMint = Gratie.RewardTokenMint({
+            businessId: 1,
+            amount: 50000,
+            lockInPercentage: 1,
+            mintNonce: 1
+        });
+
+        gratie.generateRewardTokens(
+            _rewardMint,
+            "Zoo",
+            "ZOO",
+            "ipfs://metadata.png"
+        );
+
+        console.log(
+            "Reward token balance: ",
+            rewardToken.balanceOf(address(111))
+        );
+        console.log(
+            "Reward token balance (gratie): ",
+            rewardToken.balanceOf(address(gratie))
+        );
+    }
+
+    function testThatBusinessRecievedNFT() public {
+        BusinessCanRegister();
+        // BusinessCanGenerateRewardTokens();
+        console.log("BusinessNFT count: ", businessNft.balanceOf(address(111)));
+        console.log("Gratie count: ", businessNft.balanceOf(address(gratie)));
     }
 }

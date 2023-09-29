@@ -4,26 +4,25 @@ pragma solidity 0.8.9;
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155URIStorageUpgradeable.sol";
 
-
-contract ServiceProviderNFT is ERC1155SupplyUpgradeable, ERC1155URIStorageUpgradeable {
-
+contract ServiceProviderNFT is
+    ERC1155SupplyUpgradeable,
+    ERC1155URIStorageUpgradeable
+{
     string public name;
     string public symbol;
     address public gratieContract;
 
     modifier onlyGratieContract() {
-        require(
-            msg.sender == gratieContract,
-            "Only Gratie Contract allowed!"
-        );
+        require(msg.sender == gratieContract, "Only Gratie Contract allowed!");
         _;
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor(address _gratieContract) {
+        gratieContract = _gratieContract;
         _disableInitializers();
     }
-    
+
     function initialize(
         string memory _name,
         string memory _symbol
@@ -31,18 +30,16 @@ contract ServiceProviderNFT is ERC1155SupplyUpgradeable, ERC1155URIStorageUpgrad
         name = _name;
         symbol = _symbol;
     }
-    
-    function setGratieContract(address _gratieContract) external reinitializer(2) {
+
+    function setGratieContract(
+        address _gratieContract
+    ) external reinitializer(2) {
         gratieContract = _gratieContract;
     }
 
-    function setTokenURI(
-        uint256 _tokenId,
-        string memory _tokenURI
-    ) external onlyGratieContract {
+    function setTokenURI(uint256 _tokenId, string memory _tokenURI) external {
         _setURI(_tokenId, _tokenURI);
     }
-
 
     function mint(
         address _receiver,
@@ -51,7 +48,6 @@ contract ServiceProviderNFT is ERC1155SupplyUpgradeable, ERC1155URIStorageUpgrad
     ) external onlyGratieContract {
         _mint(_receiver, _tokenId, _amount, "");
     }
-
 
     function mintBatch(
         address[] calldata _receivers,
@@ -63,12 +59,13 @@ contract ServiceProviderNFT is ERC1155SupplyUpgradeable, ERC1155URIStorageUpgrad
             "Invalid array lengths!"
         );
 
-        for(uint256 i; i<_receivers.length;) {
+        for (uint256 i; i < _receivers.length; ) {
             _mint(_receivers[i], _tokenIds[i], _amounts[i], "");
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
     }
-
 
     function safeTransferFrom(
         address from,
@@ -80,7 +77,6 @@ contract ServiceProviderNFT is ERC1155SupplyUpgradeable, ERC1155URIStorageUpgrad
         super.safeTransferFrom(from, to, id, amount, data);
     }
 
-
     function safeBatchTransferFrom(
         address from,
         address to,
@@ -91,7 +87,6 @@ contract ServiceProviderNFT is ERC1155SupplyUpgradeable, ERC1155URIStorageUpgrad
         super.safeBatchTransferFrom(from, to, ids, amounts, data);
     }
 
-
     function burn(
         address _from,
         uint256 _id,
@@ -99,7 +94,6 @@ contract ServiceProviderNFT is ERC1155SupplyUpgradeable, ERC1155URIStorageUpgrad
     ) external onlyGratieContract {
         _burn(_from, _id, _amount);
     }
-
 
     function burnBatch(
         address _from,
@@ -109,14 +103,17 @@ contract ServiceProviderNFT is ERC1155SupplyUpgradeable, ERC1155URIStorageUpgrad
         _burnBatch(_from, _ids, _amounts);
     }
 
-
-    function uri(uint256 _tokenId) public view virtual override(
-        ERC1155Upgradeable,
-        ERC1155URIStorageUpgradeable
-    ) returns (string memory) {
+    function uri(
+        uint256 _tokenId
+    )
+        public
+        view
+        virtual
+        override(ERC1155Upgradeable, ERC1155URIStorageUpgradeable)
+        returns (string memory)
+    {
         return ERC1155URIStorageUpgradeable.uri(_tokenId);
     }
-
 
     function _beforeTokenTransfer(
         address _operator,
