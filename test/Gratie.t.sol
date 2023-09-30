@@ -144,7 +144,7 @@ contract GratieTest is Test {
     //     console.log("BusinessNFT count: ", businessNft.balanceOf(address(111)));
     // }
 
-    function BusinessCanRegister() public {
+    function testBusinessCanRegister() public {
         // testIsDomainNameIsSet();
 
         (string memory _name, string memory _ipfs, , , , , ) = gratie
@@ -188,12 +188,13 @@ contract GratieTest is Test {
         );
     }
 
-    function BusinessCanGenerateRewardTokens() public {
+    function testBusinessCanGenerateRewardTokens() public {
+        testBusinessCanRegister();
         vm.prank(address(111));
         Gratie.RewardTokenMint memory _rewardMint = Gratie.RewardTokenMint({
             businessId: 1,
-            amount: 50000,
-            lockInPercentage: 1,
+            amount: 50_000_000,
+            lockInPercentage: 10,
             mintNonce: 1
         });
 
@@ -221,7 +222,8 @@ contract GratieTest is Test {
         assertTrue(clonedRewardToken.balanceOf(address(111)) == mintAmount);
     }
 
-    function BusinessCanRegisterServiceProvider() public {
+    function testBusinessCanRegisterServiceProvider() public {
+        testBusinessCanGenerateRewardTokens();
         /*
          * businessID starts at 1, and we have just 1 business registered (see BusinessCanRegister test)
          * divisionID starts at 1, and we have just 1 division registered (see divisonName and divisionMetadataURIs in BusinessCanRegister test)
@@ -243,17 +245,31 @@ contract GratieTest is Test {
         assertTrue(serviceProviderNft.balanceOf(serviceProvider, 1) == 1);
     }
 
-    function BusinessCanStartRewardDistribution() public {
+    function testBusinessCanStartRewardDistribution() public {
+        testBusinessCanRegisterServiceProvider();
         vm.prank(address(111));
-        gratie.startRewardDistribution(1, 1);
+        gratie.startRewardDistribution(1, 10);
+
+        assertTrue(gratie.rewardTokensAvailable(1) == 50000);
     }
 
-    function testAll() public {
-        BusinessCanRegister();
-        BusinessCanGenerateRewardTokens();
-        BusinessCanRegisterServiceProvider();
-        // BusinessCanStartRewardDistribution();
-        // console.log("BusinessNFT count: ", businessNft.balanceOf(address(111)));
-        // console.log("Gratie count: ", businessNft.balanceOf(address(gratie)));
+    function testProviderCanClaimRewardToken() public {
+        testBusinessCanStartRewardDistribution();
+        uint256 _businessID = 1;
+
+        vm.prank(address(serviceProvider));
+        vm.recordLogs();
+        gratie.claimRewardTokens(_businessID, 1);
+
+        // Extract the cloned reward token address from logs
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        RewardToken clonedRewardToken = RewardToken(
+            abi.decode(entries[1].data, (address))
+        );
+
+        // percentage to distribute = 10% (from testBusinessCanStartRewardDistribution)
+        // available reward tokens = 50,000 (based on calculation in gratie.generateRewardTokens())
+        // Therefore, service provider balance should be 50 (based on calculatin in gratie.startRewardDistribution())
+        assertTrue(clonedRewardToken.balanceOf(serviceProvider) == 50);
     }
 }
