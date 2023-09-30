@@ -24,6 +24,7 @@ contract GratieTest is Test {
     address public DefaultAdminAddress = address(10);
     address public PlatformAdminAddress = address(11);
     address public PlatformFeeReceiver = address(12);
+    address public serviceProvider = address(13);
     address public orignailGratie;
 
     // struct BusinessNftTier {
@@ -180,9 +181,11 @@ contract GratieTest is Test {
         );
         vm.stopPrank();
 
-        console.log("Who actually called: ", businessNft.whoCalled());
-        console.log("BusinessNFT count: ", businessNft.balanceOf(address(111)));
-        console.log("Gratie count: ", businessNft.balanceOf(address(gratie)));
+        assertTrue(businessNft.balanceOf(address(111)) == 1);
+        assertTrue(
+            keccak256(abi.encodePacked(serviceProviderNft.uri(1))) ==
+                keccak256(abi.encodePacked(_divisionMetadataURIs[0]))
+        );
     }
 
     function BusinessCanGenerateRewardTokens() public {
@@ -194,6 +197,8 @@ contract GratieTest is Test {
             mintNonce: 1
         });
 
+        // Start listening for logs
+        vm.recordLogs();
         gratie.generateRewardTokens(
             _rewardMint,
             "Zoo",
@@ -201,20 +206,54 @@ contract GratieTest is Test {
             "ipfs://metadata.png"
         );
 
-        console.log(
-            "Reward token balance: ",
-            rewardToken.balanceOf(address(111))
+        // Extract the cloned reward token address from logs
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        RewardToken clonedRewardToken = RewardToken(
+            abi.decode(entries[4].data, (address))
         );
-        console.log(
-            "Reward token balance (gratie): ",
-            rewardToken.balanceOf(address(gratie))
-        );
+
+        // Calculated actual mint amount
+        uint256 platformFee = (2 * _rewardMint.amount) / 10000;
+        uint256 lockInAmount = (_rewardMint.lockInPercentage *
+            _rewardMint.amount) / 10000;
+        uint256 mintAmount = _rewardMint.amount - platformFee - lockInAmount;
+
+        assertTrue(clonedRewardToken.balanceOf(address(111)) == mintAmount);
     }
 
-    function testThatBusinessRecievedNFT() public {
+    function BusinessCanRegisterServiceProvider() public {
+        /*
+         * businessID starts at 1, and we have just 1 business registered (see BusinessCanRegister test)
+         * divisionID starts at 1, and we have just 1 division registered (see divisonName and divisionMetadataURIs in BusinessCanRegister test)
+         **/
+        uint256 _businessID = 1;
+        uint256 _divisionID = 1;
+        address[] memory _serviceProviders = new address[](1);
+        _serviceProviders[0] = serviceProvider;
+
+        vm.prank(address(111));
+        vm.recordLogs();
+        gratie.registerServiceProviders(
+            _businessID,
+            _divisionID,
+            _serviceProviders
+        );
+        // assert that serviceProvider recieved a service provider nft
+        // service provider mints with the existing number of division, which is 1. Therefore tokenID = 1
+        assertTrue(serviceProviderNft.balanceOf(serviceProvider, 1) == 1);
+    }
+
+    function BusinessCanStartRewardDistribution() public {
+        vm.prank(address(111));
+        gratie.startRewardDistribution(1, 1);
+    }
+
+    function testAll() public {
         BusinessCanRegister();
-        // BusinessCanGenerateRewardTokens();
-        console.log("BusinessNFT count: ", businessNft.balanceOf(address(111)));
-        console.log("Gratie count: ", businessNft.balanceOf(address(gratie)));
+        BusinessCanGenerateRewardTokens();
+        BusinessCanRegisterServiceProvider();
+        // BusinessCanStartRewardDistribution();
+        // console.log("BusinessNFT count: ", businessNft.balanceOf(address(111)));
+        // console.log("Gratie count: ", businessNft.balanceOf(address(gratie)));
     }
 }
