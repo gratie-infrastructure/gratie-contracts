@@ -267,9 +267,11 @@ contract GratieTest is Test {
             abi.decode(entries[1].data, (address))
         );
 
-        // percentage to distribute = 10% (from testBusinessCanStartRewardDistribution)
-        // available reward tokens = 50,000 (based on calculation in gratie.generateRewardTokens())
-        // Therefore, service provider balance should be 50 (based on calculatin in gratie.startRewardDistribution())
+        /*
+         * percentage to distribute = 10% (from testBusinessCanStartRewardDistribution)
+         * available reward tokens = 50,000 (based on calculation in gratie.generateRewardTokens())
+         * Therefore, service provider balance should be 50 (based on calculatin in gratie.startRewardDistribution())
+         */
         assertTrue(clonedRewardToken.balanceOf(serviceProvider) == 50);
     }
 }
