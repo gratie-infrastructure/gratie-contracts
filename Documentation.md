@@ -33,7 +33,7 @@ This section describes functions/endpoints provided by the Gratie contract, what
    // payment can be of two types, ether or an erc20 token.
    const _payment = {
        method: ethers.constants.AddressZero, // when the business wishes to pay in ethers
-       method: erc20_contract_address // when the user wishes to pay in erc20 tokens (NOTE: any token can be used)
+       method: erc20_contract_address // when the user wishes to pay in erc20 tokens
        amount: 1 // amount to pay in ether or ERC20 token
    }
 
@@ -200,3 +200,133 @@ This section describes functions/endpoints provided by the Gratie contract, what
 
    await GratieContract.registerBusinessByOwner("0xd84caadc1c6ffbffe75ef51db3cbd6b10db3cb3b", "Pseudo", "Pseudo@email.com", "ipfs://pseudo/metadata.json", 1, _divisionnames, _divisionMetadataURIs);
    ```
+
+   On successful execution, this call emits the `BusinessRegisteredByOwner` event.
+
+9. Add Divisions to Business: (addDivisionsInBusines) Add Divisions to a registered Business
+
+   - NB: Only owner of buiness can call this endpoint
+
+   ```ts
+   // endpoint structure
+   addDivisionsInBusiness(
+       _businessID: Number,                 // Business ID
+       _divisionNames: String[],            // Names for new divisions to be created
+       _divisionMetadataURIs: String[]      // metadata uris for the new divisions
+   ): Promise<ContractTransaction>
+
+   //<---------- Contract call ------------>
+   const _divisionnames = ["new division1", "new division2"...];
+   const _divisionmetadatauris = ["ipfs://new_division1/metadata.json", "ipfs://new_division2/metadata.json"...];
+
+   await GratieContract.addDivisionsInBusiness(1, _divisionnames, _divisionmetadatauris);
+   ```
+
+   On successful execution, this call emits the `ServiceProviderDivisionAdded` event.
+
+### Events
+
+    event BusinessNftTierAdded(
+        address indexed by,
+        uint256 indexed tierID,
+        BusinessNftTier tier,
+        uint256 timestamp
+    );
+
+    event BusinessNftTiersActivated(
+        address indexed by,
+        uint256[] ids,
+        uint256 timestamp
+    );
+
+    event BusinessNftTiersDeactivated(
+        address indexed by,
+        uint256[] ids,
+        uint256 timestamp
+    );
+
+    event BusinessRegistered(
+        address indexed by,
+        uint256 indexed businessID,
+        uint256 indexed businessNftTier,
+        string name,
+        string email,
+        uint256 divisionsCreated,
+        ServiceProviderDivision[] divisions,
+        string paymentMethod,
+        uint256 paymentAmount,
+        uint256 timestamp
+    );
+
+    event BusinessRegisteredByOwner(
+        address indexed by,
+        uint256 indexed businessID,
+        uint256 indexed businessNftTier,
+        address to,
+        string name,
+        string email,
+        uint256 divisionsCreated,
+        ServiceProviderDivision[] divisions,
+        uint256 timestamp
+    );
+
+    event ServiceProviderDivisionAdded(
+        address indexed by,
+        uint256 indexed businessID,
+        uint256 indexed serviceProviderNftID,
+        uint256 divisionNumber,
+        string name,
+        string ipfsMetadataLink,
+        uint256 timestamp
+    );
+
+    event ServiceProvidersRegistered(
+        address indexed by,
+        uint256 indexed businessId,
+        uint256 indexed divisionId,
+        address[] addresses,
+        uint256 usdcPlatformFeePaid,
+        uint256 timestamp
+    );
+
+    event ServiceProvidersRemoved(
+        address indexed by,
+        uint256 indexed businessId,
+        uint256 indexed divisionId,
+        address[] addresses,
+        uint256 timestamp
+    );
+
+    event RewardTokensGenerated(
+        address indexed by,
+        uint256 indexed businessId,
+        uint256 indexed mintNonce,
+        address rewardToken,
+        uint256 amount,
+        uint256 lockInPercentage,
+        uint256 totalSupply,
+        string tokenName,
+        string tokenSymbol,
+        string tokenIconURL,
+        uint256 timestamp
+    );
+
+    event RewardDistributionCreated(
+        address indexed by,
+        uint256 indexed businessId,
+        uint256 indexed distributionNo,
+        uint256 totalServiceProviders,
+        uint256 percentageToDistribute,
+        uint256 availableRewardTokens,
+        uint256 tokensPerProvider,
+        uint256 startTimestamp
+    );
+
+    event RewardTokensClaimed(
+        address indexed by,
+        uint256 indexed businessId,
+        uint256 indexed distributionNo,
+        address rewardToken,
+        uint256 amount,
+        uint256 timestamp
+    );
