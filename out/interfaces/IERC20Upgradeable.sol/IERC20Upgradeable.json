@@ -1,0 +1,51 @@
+{
+  "abi": [],
+  "bytecode": {
+    "object": "0x",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "linkReferences": {}
+  },
+  "ast": {
+    "absolutePath": "lib/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC20Upgradeable.sol",
+    "id": 43909,
+    "exportedSymbols": {
+      "IERC20Upgradeable": [
+        46611
+      ]
+    },
+    "nodeType": "SourceUnit",
+    "src": "90:72:24",
+    "nodes": [
+      {
+        "id": 43907,
+        "nodeType": "PragmaDirective",
+        "src": "90:23:24",
+        "nodes": [],
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".0"
+        ]
+      },
+      {
+        "id": 43908,
+        "nodeType": "ImportDirective",
+        "src": "115:46:24",
+        "nodes": [],
+        "absolutePath": "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol",
+        "file": "../token/ERC20/IERC20Upgradeable.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 43909,
+        "sourceUnit": 46612,
+        "symbolAliases": [],
+        "unitAlias": ""
+      }
+    ],
+    "license": "MIT"
+  },
+  "id": 24
+}
