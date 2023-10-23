@@ -54,7 +54,7 @@ contract GratieTest is Test {
     function setUp() public {
         gratie = new Gratie();
         orignailGratie = address(gratie);
-        usdcContract = new USDCMock();
+        usdcContract = new USDCMock(address(111), 1_000_000);
         proxyAdmin = new ProxyAdmin(address(500));
         rewardToken = new RewardToken();
         businessNft = new BusinessNFT();

@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-
 contract GratieToken is ERC20Upgradeable, OwnableUpgradeable {
-
     string public iconURI;
     uint256 public claimAmount;
     uint256 public claimLimit;
@@ -16,7 +14,7 @@ contract GratieToken is ERC20Upgradeable, OwnableUpgradeable {
     constructor() {
         _disableInitializers();
     }
-    
+
     function initialize(
         string memory _name,
         string memory _symbol,
@@ -32,10 +30,7 @@ contract GratieToken is ERC20Upgradeable, OwnableUpgradeable {
         claimAmount = _claimAmount;
     }
 
-    function mint(
-        address _receiver,
-        uint256 _amount
-    ) external onlyOwner {
+    function mint(address _receiver, uint256 _amount) external onlyOwner {
         _mint(_receiver, _amount);
     }
 
@@ -44,10 +39,7 @@ contract GratieToken is ERC20Upgradeable, OwnableUpgradeable {
     }
 
     function claim() external {
-        require(
-            claims[msg.sender] <= claimLimit,
-            "Claim Limit reached!"
-        );
+        require(claims[msg.sender] <= claimLimit, "Claim Limit reached!");
         ++claims[msg.sender];
         transfer(msg.sender, claimAmount);
     }

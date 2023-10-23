@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract USDCMock is ERC20 {
-    constructor() ERC20("USD Coin", "USDC") {}
+    constructor(
+        address controller,
+        uint256 initialSupply
+    ) ERC20("USD Coin", "USDC") {
+        _mint(controller, initialSupply);
+    }
 }

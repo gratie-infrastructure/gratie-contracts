@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC721Upgradeable.sol";
@@ -23,15 +23,15 @@ interface IERC20 is IERC20Upgradeable {
 
 contract GratieEscrow {
     IERC721 public businessNFTs;
-    IERC20 public rewardToken;
 
     struct QuestInfo {
         address owner;
+        address questRewardToken;
         uint256 noOfParticipants;
         uint256 amountAllocationPerUser;
     }
 
-    mapping(address => uint256) public businessBalance;
+    mapping(address => mapping(address => uint256)) public businessBalance;
     mapping(address => QuestInfo) public businessQuests;
 
     event QuestInitialized(
@@ -58,19 +58,19 @@ contract GratieEscrow {
     // Modifier to make sure user has enough reward tokens for quest creation
     modifier hasEnoughRewardTokens(
         uint256 _noOfParticipants,
-        uint256 _allocationPerUser
+        uint256 _allocationPerUser,
+        address _tokenTracker
     ) {
         uint256 expectedAmount = _noOfParticipants * _allocationPerUser;
         require(
-            rewardToken.balanceOf(msg.sender) > expectedAmount,
+            IERC20(_tokenTracker).balanceOf(msg.sender) > expectedAmount,
             "Insufficient Reward Tokens Balance"
         );
         _;
     }
 
-    constructor(address _businessNFTAddress, address _rewardTokenAddress) {
+    constructor(address _businessNFTAddress) {
         businessNFTs = IERC721(_businessNFTAddress);
-        rewardToken = IERC20(_rewardTokenAddress);
     }
 
     /**
@@ -81,21 +81,31 @@ contract GratieEscrow {
      */
     function createQuest(
         uint256 _noOfParticipants,
-        uint256 _allocationPerUser
+        uint256 _allocationPerUser,
+        address _tokenTracker
     )
         public
         onlyBusinessNFTHolder
-        hasEnoughRewardTokens(_noOfParticipants, _allocationPerUser)
+        hasEnoughRewardTokens(
+            _noOfParticipants,
+            _allocationPerUser,
+            _tokenTracker
+        )
     {
-        uint256 existingBalance = getExistinBalance(msg.sender);
+        uint256 existingBalance = getExistingBalance(msg.sender, _tokenTracker);
         uint256 questAllocation = _noOfParticipants * _allocationPerUser;
         uint256 expectedDeposit = questAllocation - existingBalance;
 
-        rewardToken.transferFrom(msg.sender, address(this), expectedDeposit);
-        businessBalance[msg.sender] += expectedDeposit;
+        IERC20(_tokenTracker).transferFrom(
+            msg.sender,
+            address(this),
+            expectedDeposit
+        );
+        businessBalance[msg.sender][_tokenTracker] += expectedDeposit;
 
         QuestInfo memory _questInfo = QuestInfo({
             owner: address(msg.sender),
+            questRewardToken: address(_tokenTracker),
             noOfParticipants: _noOfParticipants,
             amountAllocationPerUser: _allocationPerUser
         });
@@ -115,19 +125,21 @@ contract GratieEscrow {
      *
      */
     function airdropRewards(
-        address[] memory recipients
+        address[] memory recipients,
+        address _tokenTracker
     ) public onlyBusinessNFTHolder {
         QuestInfo memory _questInfo = businessQuests[msg.sender];
         uint256 amountToBeAirdropped = recipients.length *
             _questInfo.noOfParticipants;
         require(
-            businessBalance[msg.sender] > amountToBeAirdropped,
+            businessBalance[msg.sender][_tokenTracker] > amountToBeAirdropped,
             "Insufficient Stored Balance"
         );
 
         for (uint256 index = 0; index < recipients.length; index++) {
-            businessBalance[msg.sender] -= _questInfo.amountAllocationPerUser;
-            bool sent = rewardToken.transfer(
+            businessBalance[msg.sender][_tokenTracker] -= _questInfo
+                .amountAllocationPerUser;
+            bool sent = IERC20(_tokenTracker).transfer(
                 recipients[index],
                 _questInfo.amountAllocationPerUser
             );
@@ -142,12 +154,13 @@ contract GratieEscrow {
     }
 
     /*
-     * @dev getExistinBalance(businessAddress): returns the balance of a business in the contract
+     * @dev getExistingBalance(businessAddress): returns the balance of a business in the contract
      * @param businessAddress: address of the business
      */
-    function getExistinBalance(
-        address businessAddress
+    function getExistingBalance(
+        address businessAddress,
+        address _tokenTracker
     ) public view returns (uint256) {
-        return businessBalance[businessAddress];
+        return businessBalance[businessAddress][_tokenTracker];
     }
 }
