@@ -158,7 +158,9 @@ contract GratieTest is Test {
             name: "Zoo",
             email: "Zoo@gratie.com",
             nftMetadataURI: "ipfs://zoodata/metadata.json",
-            businessNftTier: 1
+            businessNftTier: 1,
+            valuation: 1000000,
+            tokenDistribution: 1000
         });
 
         string[] memory _divisionNames = new string[](1);
@@ -180,6 +182,23 @@ contract GratieTest is Test {
             _payment
         );
         vm.stopPrank();
+
+        (
+            string memory name,
+            string memory email,
+            ,
+            uint256 businessId,
+            ,
+            uint256 valuation,
+            uint256 distribution,
+            ,
+
+        ) = gratie.businesses(address(111));
+        console.log("Business name: ", name);
+        console.log("Business email: ", email);
+        console.log("Business ID: ", businessId);
+        console.log("Business valuation: ", valuation);
+        console.log("Business distribution: ", distribution);
 
         assertTrue(businessNft.balanceOf(address(111)) == 1);
         assertTrue(
@@ -259,7 +278,7 @@ contract GratieTest is Test {
 
         vm.prank(address(serviceProvider));
         vm.recordLogs();
-        gratie.claimRewardTokens(_businessID, 1);
+        gratie.claimRewardTokens(address(111), _businessID, 1);
 
         // Extract the cloned reward token address from logs
         Vm.Log[] memory entries = vm.getRecordedLogs();

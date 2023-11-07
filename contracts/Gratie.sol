@@ -113,7 +113,10 @@ contract Gratie is
         string name;
         string email;
         address rewardToken;
+        uint256 businessId;
         uint256 businessNftTier;
+        uint256 businessValuation;
+        uint256 tokenDistribution;
         uint256 divisionsInBusiness;
         uint256 totalServiceProviders;
         mapping(uint256 => ServiceProviderDivision) serviceProviderDivisions;
@@ -140,6 +143,8 @@ contract Gratie is
         string email;
         string nftMetadataURI;
         uint256 businessNftTier;
+        uint256 valuation;
+        uint256 tokenDistribution;
     }
 
     struct InitData {
@@ -157,7 +162,7 @@ contract Gratie is
     }
 
     mapping(uint256 => BusinessNftTier) public businessNftTiers;
-    mapping(uint256 => Business) public businesses;
+    mapping(address => Business) public businesses;
     mapping(uint256 => uint256) public divisionNftIdToBusinessNftId;
     mapping(uint256 => uint256) public rewardTokenMints;
 
@@ -361,11 +366,15 @@ contract Gratie is
 
         require(tierData.isActive, "Inactive business nft tier!");
 
-        Business storage business = businesses[++totalBusinesses];
+        Business storage business = businesses[msg.sender];
         business.name = _businessData.name;
         business.email = _businessData.email;
+        business.businessId = ++totalBusinesses;
         business.businessNftTier = _businessData.businessNftTier;
+        business.businessValuation = _businessData.valuation;
+        business.tokenDistribution = _businessData.tokenDistribution;
         ServiceProviderDivision[] memory _divisions = _addDivisionsInBusiness(
+            msg.sender,
             totalBusinesses,
             _divisionNames,
             _divisionMetadataURIs
@@ -419,6 +428,8 @@ contract Gratie is
         string memory _email,
         string memory _nftMetadataURI,
         uint256 _businessNftTier,
+        uint256 _valuation,
+        uint256 _tokenDistribution,
         string[] memory _divisionNames,
         string[] memory _divisionMetadataURIs
     ) external onlyOwner {
@@ -431,11 +442,15 @@ contract Gratie is
 
         require(tierData.isActive, "Inactive business nft tier!");
 
-        Business storage business = businesses[++totalBusinesses];
+        Business storage business = businesses[_to];
         business.name = _name;
         business.email = _email;
         business.businessNftTier = _businessNftTier;
+        business.businessValuation = _valuation;
+        business.tokenDistribution = _tokenDistribution;
+
         ServiceProviderDivision[] memory _divisions = _addDivisionsInBusiness(
+            _to,
             totalBusinesses,
             _divisionNames,
             _divisionMetadataURIs
@@ -467,6 +482,7 @@ contract Gratie is
             "Not the Business NFT Owner!"
         );
         _addDivisionsInBusiness(
+            msg.sender,
             _businessID,
             _divisionNames,
             _divisionMetadataURIs
@@ -482,14 +498,14 @@ contract Gratie is
             _businessID > 0 && _businessID <= totalBusinesses,
             "Invalid business id!"
         );
-        Business storage business = businesses[_businessID];
-        require(
-            _divisionID > 0 && _divisionID <= business.divisionsInBusiness,
-            "Invalid division id!"
-        );
         require(
             msg.sender == businessNFTs.ownerOf(_businessID),
             "Not the business nft owner!"
+        );
+        Business storage business = businesses[msg.sender];
+        require(
+            _divisionID > 0 && _divisionID <= business.divisionsInBusiness,
+            "Invalid division id!"
         );
         business.totalServiceProviders += _serviceProviders.length;
         business
@@ -558,23 +574,23 @@ contract Gratie is
             _businessID > 0 && _businessID <= totalBusinesses,
             "Invalid business id!"
         );
-        Business storage business = businesses[_businessID];
-        require(
-            _divisionID > 0 && _divisionID <= business.divisionsInBusiness,
-            "Invalid division id!"
-        );
         require(
             msg.sender == businessNFTs.ownerOf(_businessID),
             "Not the business nft owner!"
         );
+        Business storage business = businesses[msg.sender];
+        require(
+            _divisionID > 0 && _divisionID <= business.divisionsInBusiness,
+            "Invalid division id!"
+        );
 
-        businesses[_businessID].totalServiceProviders -= _serviceProviders
+        businesses[msg.sender].totalServiceProviders -= _serviceProviders
             .length;
-        businesses[_businessID]
+        businesses[msg.sender]
             .serviceProviderDivisions[_divisionID]
             .serviceProvidersInDivision -= _serviceProviders.length;
 
-        uint256 _nftId = businesses[_businessID]
+        uint256 _nftId = businesses[msg.sender]
             .serviceProviderDivisions[_divisionID]
             .serviceProviderNftID;
         for (uint256 i; i < _serviceProviders.length; ) {
@@ -614,7 +630,7 @@ contract Gratie is
         );
         require(_data.lockInPercentage <= 10000, "Invalid lock in percentage!");
 
-        address rewardToken = businesses[_data.businessId].rewardToken;
+        address rewardToken = businesses[msg.sender].rewardToken;
         if (rewardToken == address(0)) {
             rewardToken = ClonesUpgradeable.clone(rewardTokenImplementation);
             IERC20Mintable(rewardToken).initialize(
@@ -623,11 +639,11 @@ contract Gratie is
                 _tokenIconURL,
                 address(this)
             );
-            businesses[_data.businessId].rewardToken = rewardToken;
+            businesses[msg.sender].rewardToken = rewardToken;
         }
 
         uint256 platformFee = (businessNftTiers[
-            businesses[_data.businessId].businessNftTier
+            businesses[msg.sender].businessNftTier
         ].platformFee * _data.amount) / 10000;
         uint256 lockInAmount = (_data.lockInPercentage * _data.amount) / 10000;
         rewardTokensAvailable[_data.businessId] += lockInAmount;
@@ -672,12 +688,12 @@ contract Gratie is
         );
         uint256 tokensPerProvider = (_percentageToDistribute *
             rewardTokensAvailable[_businessID]) /
-            (10000 * businesses[_businessID].totalServiceProviders);
+            (10000 * businesses[msg.sender].totalServiceProviders);
 
         rewardDistributions[_businessID][
             ++rewardDistributionsCreated[_businessID]
         ] = RewardTokenDistribution(
-            businesses[_businessID].totalServiceProviders,
+            businesses[msg.sender].totalServiceProviders,
             tokensPerProvider,
             block.timestamp,
             _percentageToDistribute,
@@ -688,7 +704,7 @@ contract Gratie is
             msg.sender,
             _businessID,
             rewardDistributionsCreated[_businessID],
-            businesses[_businessID].totalServiceProviders,
+            businesses[msg.sender].totalServiceProviders,
             _percentageToDistribute,
             rewardTokensAvailable[_businessID],
             tokensPerProvider,
@@ -697,6 +713,7 @@ contract Gratie is
     }
 
     function claimRewardTokens(
+        address _businessOwner,
         uint256 _businessID,
         uint256 _distributionNo
     ) external {
@@ -725,7 +742,7 @@ contract Gratie is
         hasClaimedRewards[msg.sender][_businessID][_distributionNo] = true;
         _distribution.claimsDone += 1;
 
-        IERC20Upgradeable(businesses[_businessID].rewardToken).transfer(
+        IERC20Upgradeable(businesses[_businessOwner].rewardToken).transfer(
             msg.sender,
             _distribution.tokensPerProvider
         );
@@ -734,7 +751,7 @@ contract Gratie is
             msg.sender,
             _businessID,
             _distributionNo,
-            businesses[_businessID].rewardToken,
+            businesses[_businessOwner].rewardToken,
             _distribution.tokensPerProvider,
             block.timestamp
         );
@@ -756,6 +773,7 @@ contract Gratie is
     }
 
     function _addDivisionsInBusiness(
+        address _businessOwner,
         uint256 _businessID,
         string[] memory _divisionNames,
         string[] memory _divisionMetadataURIs
@@ -771,7 +789,7 @@ contract Gratie is
             );
         for (uint256 i; i < _divisionNames.length; ) {
             unchecked {
-                Business storage business = businesses[_businessID];
+                Business storage business = businesses[_businessOwner];
                 ServiceProviderDivision
                     memory _newDivision = ServiceProviderDivision(
                         _divisionNames[i],
