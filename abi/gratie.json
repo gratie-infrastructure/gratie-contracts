@@ -804,6 +804,29 @@
         "type": "uint256"
       },
       {
+        "internalType": "uint256",
+        "name": "_businessValuation",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_tokenDistribution",
+        "type": "uint256"
+      }
+    ],
+    "name": "addCompanyValuation",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_businessID",
+        "type": "uint256"
+      },
+      {
         "internalType": "string[]",
         "name": "_divisionNames",
         "type": "string[]"
@@ -1457,7 +1480,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "_valuation",
+        "name": "_businessValuation",
         "type": "uint256"
       },
       {

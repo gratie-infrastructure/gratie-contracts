@@ -19,7 +19,7 @@ contract DeployGratie is Script {
         uint256 privatekey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privatekey);
         address account = vm.addr(privatekey);
-        uint256 initialSupply = 1_000_000;
+        uint256 initialSupply = 1_000_000 ether;
 
         Gratie gratie = new Gratie();
         USDCMock usdcContract = new USDCMock(account, initialSupply);
@@ -30,12 +30,13 @@ contract DeployGratie is Script {
 
         Gratie.BusinessNftTier[]
             memory _businessNftTier = new Gratie.BusinessNftTier[](1);
-        _businessNftTier[0].name = "TIER1";
-        _businessNftTier[0].ipfsMetadataLink = "ipfs://something";
-        _businessNftTier[0].usdcPrice = 30;
-        _businessNftTier[0].freeUsersCount = 1;
-        _businessNftTier[0].usdcPerAdditionalUser = 5;
-        _businessNftTier[0].platformFee = 2;
+        _businessNftTier[0].name = "Mini";
+        _businessNftTier[0]
+            .ipfsMetadataLink = "https://c72e2d52250e478c8090d8325fb262c2.ipfscdn.io/ipfs/bafybeidtigno5dmeozffbfkjts6s5x3nhhysi633jgz7uugi4ecaxt3qo4";
+        _businessNftTier[0].usdcPrice = 0;
+        _businessNftTier[0].freeUsersCount = 3;
+        _businessNftTier[0].usdcPerAdditionalUser = 0;
+        _businessNftTier[0].platformFee = 0;
         _businessNftTier[0].isActive = true;
 
         address[] memory gratiePlatformAdmins = new address[](1);

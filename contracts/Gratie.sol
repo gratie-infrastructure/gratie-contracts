@@ -371,8 +371,8 @@ contract Gratie is
         business.email = _businessData.email;
         business.businessId = ++totalBusinesses;
         business.businessNftTier = _businessData.businessNftTier;
-        business.businessValuation = _businessData.valuation;
-        business.tokenDistribution = _businessData.tokenDistribution;
+        business.businessValuation = 0;
+        business.tokenDistribution = 0;
         ServiceProviderDivision[] memory _divisions = _addDivisionsInBusiness(
             msg.sender,
             totalBusinesses,
@@ -381,9 +381,11 @@ contract Gratie is
         );
 
         // Transfer payment value from msg.sender to platform fee receiver.
-        if (_payment.method == address(0)) {
+        if (_payment.method == address(0) && _payment.amount > 0) {
             sendValue(platformFeeReceiver, _payment.amount);
-        } else {
+        }
+
+        if (_payment.method != address(0) && _payment.amount > 0) {
             IERC20Upgradeable(_payment.method).transferFrom(
                 msg.sender,
                 platformFeeReceiver,
@@ -428,7 +430,7 @@ contract Gratie is
         string memory _email,
         string memory _nftMetadataURI,
         uint256 _businessNftTier,
-        uint256 _valuation,
+        uint256 _businessValuation,
         uint256 _tokenDistribution,
         string[] memory _divisionNames,
         string[] memory _divisionMetadataURIs
@@ -446,7 +448,7 @@ contract Gratie is
         business.name = _name;
         business.email = _email;
         business.businessNftTier = _businessNftTier;
-        business.businessValuation = _valuation;
+        business.businessValuation = _businessValuation;
         business.tokenDistribution = _tokenDistribution;
 
         ServiceProviderDivision[] memory _divisions = _addDivisionsInBusiness(
@@ -470,6 +472,20 @@ contract Gratie is
             _divisions,
             block.timestamp
         );
+    }
+
+    function addCompanyValuation(
+        uint256 _businessID,
+        uint256 _businessValuation,
+        uint256 _tokenDistribution
+    ) external {
+        require(
+            businessNFTs.ownerOf(_businessID) == msg.sender,
+            "Not the Business NFT Owner"
+        );
+
+        businesses[msg.sender].businessValuation = _businessValuation;
+        businesses[msg.sender].tokenDistribution = _tokenDistribution;
     }
 
     function addDivisionsInBusiness(

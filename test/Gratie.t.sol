@@ -54,7 +54,7 @@ contract GratieTest is Test {
     function setUp() public {
         gratie = new Gratie();
         orignailGratie = address(gratie);
-        usdcContract = new USDCMock(address(111), 1_000_000);
+        usdcContract = new USDCMock(address(111), 1_000_000 ether);
         proxyAdmin = new ProxyAdmin(address(500));
         rewardToken = new RewardToken();
         businessNft = new BusinessNFT();
@@ -199,6 +199,7 @@ contract GratieTest is Test {
         console.log("Business ID: ", businessId);
         console.log("Business valuation: ", valuation);
         console.log("Business distribution: ", distribution);
+        console.log("Usdc balance: ", usdcContract.balanceOf(address(111)));
 
         assertTrue(businessNft.balanceOf(address(111)) == 1);
         assertTrue(
